@@ -22,4 +22,5 @@ Development environment is Windows, so installation assumes that. Installing in 
     ```
 
 1. Install face_recognition: `pip install face_recognition`.
+1. Install OpenCV: `pip install opencv-python`
 

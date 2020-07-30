@@ -1,20 +1,9 @@
-# Capstone Intro
-
-Concept: Local face, emotion, and quality tagging
+# LITS: Local Image Tagging and Search
+Concept: Locally-run NN tagging for images. To eventually include faces, emotion, quality, and more
 
 ## Minimum viable product
 Facial recognition for running in bulk across many images on your local machine.
 An interface for putting names to face groups (many face versions that are all the same person)
-
-## Name ideas
-* LFEQTI ("ell-FEKT-ee") : Local face, emotion, and quality tagging for images
-* LNNIT ("lin-nit"): Local Neural Network Image Toolkit
-* LITWAI ("Lit-why"): Local Image Tagging
-* ITG:  Image Tag Generation
-* LITS: Local Image Tagging and Search
-
-Let's go with LITS.
-
 
 # Development Steps
 * Read image tags
@@ -28,7 +17,7 @@ Let's go with LITS.
    *Promising: https://www.pyimagesearch.com/2018/06/18/face-recognition-with-opencv-python-and-deep-learning/
 * Face recognition optimization
    * Batch process: https://github.com/ageitgey/face_recognition/blob/master/examples/find_faces_in_batches.py
-* Database
+* Database (at picture root, probably SQLite)
 * After a scan, update database so that reports are fast
 * User interface: face labeling
 * User interface: searching
@@ -50,9 +39,7 @@ Broad breakdowns of functionality. Mostly just guesses right now.
 * Ask user which analysis to do: face/quality/objects/emotion/age/gender
 * List all files in folder, filter for files we can process, notify user of files we can't
 * If image is in database, skip if it already has all the data we're extracting this run (face/quality/etc) and the date modified (?) matches
-* Face-recognition-specific steps:
-   * Use OpenCV to see if there are faces at all
-   * If there are faces, pass face locations to f_r with some % padding.
+* Encode faces
 * Run analyses on it and store to database
 * Save tags for group
 
@@ -90,6 +77,8 @@ What if we identify and rotate faces, *then* crop/resize as necessary just the f
  
  
 # Enhancements
+Add a face clustering functionality so that users can easily pick out which people should be added to known faces
+
 Detect people shapes and not just faces
 
 Use multiple images of each known person
@@ -98,6 +87,7 @@ Use multiple images of each known person
 Tag pictures with emotional content
 * https://www.neonopen.org/ is a dataset for this
 * MS offers this as a service
+* dlib and opencv both do this
 
 Evaluate aesthetic and technical quality of pictures
 * https://idealo.github.io/image-quality-assessment/ is a system for this, based on https://ai.googleblog.com/2017/12/introducing-nima-neural-image-assessment.html
@@ -107,3 +97,8 @@ Tag pictures with detected objects
 
 Tag pictures with estimated age and gender of people
 * https://towardsdatascience.com/predict-age-and-gender-using-convolutional-neural-network-and-opencv-fd90390e3ce6
+
+Feature to re-root a database, ie, moving it or the pictures relative to each other.
+* Would need hashes of the pictures or similar
+* Match by file name and EXIF data, then hash?
+* Update database with new path relative to picture root
