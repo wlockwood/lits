@@ -20,6 +20,7 @@ Represents an image on disk that may or may not yet have been processed, or may 
 * TechQuality: float - Technical quality of picture
 * SubjectiveQuality: float - Aesthetic quality of picture
 * ~~QueryDatabase -> None - Get this file's data from the database.~~ Don't do this, initiate from the DAL
+* ? FromDatabaseRow -> Image - Create an image from a database row
 * SaveTags -> bool - Write current data that should be in tags to disk.
     * This makes more sense to do from the image because the image needs to control how its tags are written
 * EXIF fields: Date taken, exposure, lens, location if any

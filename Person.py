@@ -1,6 +1,7 @@
 from typing import List, Any
 
 class Person:
+    """An identified (name<->picture correlation) person."""
     def __init__(self, name: str, known_images: List[str]):
         # Parameters
         self.name = name
@@ -15,3 +16,9 @@ class Person:
 
     def __repr__(self):
         return f"Person({str(self)}"
+
+
+    @staticmethod
+    def from_db_row(row) -> "Person":
+        pass
+

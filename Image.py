@@ -21,3 +21,9 @@ class Image:
         """
         return self.dbid is not None
 
+    def save_tags(self):
+        pass
+
+    @staticmethod
+    def from_db_row() -> "Image":
+        pass
