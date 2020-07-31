@@ -1,5 +1,6 @@
 from typing import List, Any
-import Person
+from Model import Person
+
 
 class Image:
     def __init__(self, path: str):
@@ -12,8 +13,8 @@ class Image:
         self.matched_people = List[Person]
 
         self.exif_data = None
-        self.tech_quality: float = Any  # Technical quality
-        self.ae_quality: float = Any # Aesthetic quality
+        # self.tech_quality: float = Any  # Technical quality (FUTURE)
+        # self.ae_quality: float = Any # Aesthetic quality (FUTURE)
 
     def is_tracked(self) -> bool:
         """
@@ -25,5 +26,12 @@ class Image:
         pass
 
     @staticmethod
-    def from_db_row() -> "Image":
+    def from_db_row(row) -> "Image":
+        """
+        Create an Image instance from a database row
+        :return:
+        """
+        pass
+
+    def to_db_row(self):
         pass
