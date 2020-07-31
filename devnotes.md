@@ -24,16 +24,7 @@ An interface for putting names to face groups (many face versions that are all t
 * User interface: reports/visualizations
 
 # Modules
-Broad breakdowns of functionality. Mostly just guesses right now.
-* Image file manipulation (read/write images and tags)
-* Face detection
-* Face alignment
-* Face recognition
-* Database interactions
-* UI Controllers
-* UI (label face groups, search database)
-* Person (Name, sample image path, encoded face)
-* PersonStore (allows retrieving people easily by name/path/best match for encoding?)
+Module breakdown moved to Modules.md
 
 # Program flow
 * Ask user for image search root
@@ -53,8 +44,8 @@ Broad breakdowns of functionality. Mostly just guesses right now.
 
 # Optimization
 * Either multiprocess per-picture, or look at the batching approach in f_r
-* If multiprocessing, take in a list of analyses to perform
-* Multi-process access to sqlite?
+* Take in a list of analyses to perform rather than assuming f_r is it.
+* Multi-process access to sqlite may run into concurrency issues
 
 # Notes 
 Google Photos can easily create a pre-tagged dataset, in the sense that I can have folders where each picture contains at least that person. Not sure how to handle multiple people this way though.
