@@ -32,6 +32,8 @@ Broad breakdowns of functionality. Mostly just guesses right now.
 * Database interactions
 * UI Controllers
 * UI (label face groups, search database)
+* Person (Name, sample image path, encoded face)
+* PersonStore (allows retrieving people easily by name/path/best match for encoding?)
 
 # Program flow
 * Ask user for image search root
