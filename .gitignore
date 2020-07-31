@@ -4,3 +4,4 @@ face_recognition_repo
 *.jpg
 *.png
 .idea
+*.db
