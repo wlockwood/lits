@@ -1,4 +1,7 @@
-# Install Manual
+# LITS: Local Image Tagging and Search
+Concept: Locally-run NN tagging for images. To eventually include faces, emotion, quality, and more.
+
+# Install Manual 
 
 Development environment is Windows, so installation assumes that. Installing in other environments should be doable with slight modifications that are left as an exercise to the Linux-using reader.
 
