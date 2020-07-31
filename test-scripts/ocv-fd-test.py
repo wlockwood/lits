@@ -1,7 +1,7 @@
 import cv2
 import os
 
-image_path = "test-data\\unknown\\work group will.jpg"
+image_path = "../test-data/unknown/work group will.jpg"
 image = cv2.imread(image_path, cv2.IMREAD_COLOR)
 
 # Parameter specifying how much the image size is reduced at each image scale.
