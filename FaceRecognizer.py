@@ -1,10 +1,16 @@
 from typing import List, Any
-
+import Person
 
 class FaceRecognizer:
-    def __init__(self, known_faces_path: str, unknown_faces_path: str, tolerance=-1):
-        self.known_faces_path = known_faces_path
-        self.unknown_faces_path = unknown_faces_path
+    def __init__(self, known_people: List[Person], images_to_evaluate: List[str], tolerance: float = Any):
+        """
+
+        :param known_people: List of pre-identified Person objects.
+        :param images_to_evaluate: List of paths to images to evaluate.
+        :param tolerance: Maximum facial distance to accept.
+        """
+        self.known_people = known_people
+        self.images_to_evaluate = images_to_evaluate
         self.tolerance = tolerance
 
     @staticmethod
