@@ -22,7 +22,7 @@ def encode_faces(images: List[Image], jitter: int = 1, resize_to: int = 750) -> 
     :param resize_to: Size to resize to. Lower number is faster but less accurate.
     :return: The input list of images.
     """
-    # TODO: Rotate faces prior to encoding them
+    # TODO: EXIF rotate images prior to encoding them
 
     encoded_faces = []
     for image in images:
@@ -85,7 +85,6 @@ def match_best(known_people: List[Person], unknown_encodings: List[ndarray], tol
             found_people.append(best_match)
     return found_people
 
-
 # https://github.com/ageitgey/face_recognition/blob/master/examples/find_faces_in_batches.py
 def FindFaces(images: List[str]):
     """
@@ -102,41 +101,52 @@ class TestFaceRecognizer(unittest.TestCase):
     test_data_path  = "..\\test-data\\"
     known_images = [Image(test_data_path + "known\\will.jpg")]
     test_faces = encode_faces(known_images)
+    test_person = Person("will", known_images)
+    test_person.encodings = test_faces[0].encodings_in_image
 
-    unknown_person = Image(test_data_path + "unknown\\will2.jpg")
+    will_as_unknown = Image(test_data_path + "unknown\\will2.jpg")
+    sam_will_trail = Image(test_data_path + "unknown\\sam will trail 2.jpg")
     mushroom = Image(test_data_path + "unknown\\mushroom.jpg")
     multiple_people = Image(test_data_path + "unknown\\work group will.jpg")
     different_person = Image(test_data_path + "unknown\\jackie phone.jpg")
-    test_person = Person("will", known_images)
-    test_person.encodings = [test_faces[0].encodings_in_image[0]]
 
     # Should match when same person
     def test_one_to_one_match(self):
-        unknown_images = encode_faces([self.unknown_person])
+        unknown_images = encode_faces([self.will_as_unknown])
         best_matches = match_best([self.test_person], unknown_images[0].encodings_in_image)
         self.assertEqual(len(best_matches), 1, "face didn't match itself in another picture")
 
     def test_multiple_pictures_per_known(self):
-        pass
+        # Requires more convoluted test setup for the known person
+        known_images = [Image(self.test_data_path + "known\\will\\will.jpg"),
+                        Image(self.test_data_path + "known\\will\\will sunglass hat.png")]
+        encode_faces(known_images)
+        test_person = Person("will", known_images)
+        test_person.encodings = [enc for im in known_images for enc in im.encodings_in_image]  # Flat?
+
+        unknown_images = encode_faces([self.will_as_unknown])
+        best_matches = match_best([test_person], unknown_images[0].encodings_in_image)
+        self.assertEqual(1, len(best_matches), "couldn't match a face using multiple images for known person")
+
+        unknown_images = encode_faces([self.sam_will_trail])
+        best_matches = match_best([test_person], unknown_images[0].encodings_in_image)
+        self.assertEqual(1, len(best_matches), "couldn't match a face using multiple images for known person")
 
     # Should work with multiple matches in picture
     def test_multiple_unknown_in_picture(self):
         unknown_images = encode_faces([self.multiple_people])
         best_matches = match_best([self.test_person], unknown_images[0].encodings_in_image)
-        self.assertEqual(len(best_matches), 1, "face didn't match with itself in a picture with other people as well")
+        self.assertEqual(1, len(best_matches), "face didn't match with itself in a picture with other people as well")
 
     # Shouldn't match on different person
     def test_no_match(self):
         unknown_images = encode_faces([self.different_person])
         best_matches = match_best([self.test_person], unknown_images[0].encodings_in_image)
-        self.assertEqual(len(best_matches), 0, "face matched against a different face")
+        self.assertEqual(0, len(best_matches), "face matched against a different face")
 
     # Shouldn't match on a mushroom
     def test_not_a_person(self):
         unknown_images = encode_faces([self.mushroom])
         faces_found = len(unknown_images[0].encodings_in_image)
-        self.assertEqual(faces_found, 0, "found a face match when looking at a mushroom")
+        self.assertEqual(0, faces_found, "found a face match when looking at a mushroom")
 
-if __name__ == "__main__":
-    test_fixture = TestFaceRecognizer()
-    test_fixture.test_match()
