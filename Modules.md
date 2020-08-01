@@ -33,9 +33,10 @@ Needs:
 * Should be able to read date modified for a file
 
 Solutions:
-* Reading image data: handled by OpenCV and face_recognition
-* Reading/writing IPTC: [iptcinfo3](https://github.com/jamesacampbell/iptcinfo3) (install from pip)
-* Reading/writing EXIF: [piexif](https://pypi.org/project/piexif/) (install from pip)
+* Reading image data: handled by dlib and face_recognition
+* Pillow can read and write some IPTC, and can read EXIF
+* ~~Reading/writing IPTC: [iptcinfo3](https://github.com/jamesacampbell/iptcinfo3) (install from pip)~~
+* ~~Reading/writing EXIF: [piexif](https://pypi.org/project/piexif/) (install from pip)~~
 * Reading/writing NTFS metadata? `os.path.getmtime(path)` gives modified time. Good enough?
 
 ## Database interactions
