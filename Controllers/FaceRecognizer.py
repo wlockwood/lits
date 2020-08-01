@@ -2,9 +2,12 @@ from typing import List, Any
 from collections import namedtuple
 from numpy.core.multiarray import ndarray #Encoded faces
 
-from Model import Person, Image
+from Model.Person import Person
+from Model.Image import Image
 import face_recognition as fr
 from dlib import resize_image
+
+import unittest
 
 # Named tuple to make later code more self documenting
 ComparedFace = namedtuple("ComparedFace", "Person Distance")
@@ -72,4 +75,18 @@ def FindFaces(images: List[str]):
     :return:
     """
     raise Exception("Batch face detection not yet implemented")
+    pass
+
+# Tests
+class TestFaceRecogizer(unittest.TestCase):
+    def setUp(self):
+        known_image = Image("test-data\\known\\will.jpg")
+        test_faces = encode_faces([known_image])
+        test_person = Person("will", [known_image])
+        test_person.encoding = test_faces[0]
+
+    def test_match(self):
+        pass
+
+if __name__ == "__main__":
     pass
