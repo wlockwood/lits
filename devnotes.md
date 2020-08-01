@@ -60,8 +60,7 @@ https://github.com/davidsandberg/facenet* Old but very similar.
 
 What if we identify and rotate faces, *then* crop/resize as necessary just the face?
 
-
-
+Should we store encoded faces somewhere in the IPTC data? This would make recovering from a lost/corrupt database very fast.
 
 # Visualizations
 (Part of WGU's capstone requirements)

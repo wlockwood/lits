@@ -13,7 +13,7 @@ class Person:
         self.known_images = known_images
 
         # Other fields
-        self.encoding: ndarray = Any
+        self.encodings: List[ndarray] = Any
         self.dbid: int = Any
 
     def __str__(self):
@@ -25,3 +25,4 @@ class Person:
     @staticmethod
     def from_db_row(row) -> "Person":
         pass
+        # This may end up being many DB rows
