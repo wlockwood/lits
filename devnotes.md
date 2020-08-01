@@ -63,7 +63,13 @@ What if we identify and rotate faces, *then* crop/resize as necessary just the f
 Should we store encoded faces somewhere in the IPTC data? This would make recovering from a lost/corrupt database very fast.
 
 # Visualizations
-(Part of WGU's capstone requirements)
+Part of WGU's capstone requirements. 
+
+Create a separate script to extract data from the database and create charts. 
+
+Plotly or Matplotlib. Others?
+
+Visualization ideas:
 * Number of people in pictures
 * Number of people in pictures over time
 * Person content over time based on image capture time
