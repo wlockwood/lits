@@ -9,10 +9,6 @@ from dlib import resize_image
 
 import unittest
 
-# Named tuple to make later code more self documenting
-ComparedFace = namedtuple("ComparedFace", "Person Distance")
-ComparedFace.__str__ = lambda self: f"{self.Person.Name} ({self.Distance:.3f})"
-
 
 def encode_faces(images: List[Image], jitter: int = 1, resize_to: int = 750) -> List[Image]:
     """
@@ -36,6 +32,11 @@ def encode_faces(images: List[Image], jitter: int = 1, resize_to: int = 750) -> 
     return images
 
 
+# Named tuple to make matching code easier to read
+ComparedFace = namedtuple("ComparedFace", "Person Distance")
+ComparedFace.__str__ = lambda self: f"{self.Person.Name} ({self.Distance:.3f})"
+
+
 def match_best(known_people: List[Person], unknown_encodings: List[ndarray], tolerance: float = 0.6) -> List[Person]:
     """
     Compares encoded versions of faces found in a picture to a set of known people and returns the best matches.
@@ -52,7 +53,6 @@ def match_best(known_people: List[Person], unknown_encodings: List[ndarray], tol
         raise ValueError("match_best requires that at least one unknown image be specified")
     if type(unknown_encodings[0]) != ndarray:
         raise TypeError(f"unknown_encodings must be of type List[ndarray], but detected {type(unknown_encodings[0])}")
-
 
     # Flatten list of known people's encodings
     flat_known_encodings = []
@@ -85,6 +85,7 @@ def match_best(known_people: List[Person], unknown_encodings: List[ndarray], tol
             found_people.append(best_match)
     return found_people
 
+
 # https://github.com/ageitgey/face_recognition/blob/master/examples/find_faces_in_batches.py
 def FindFaces(images: List[str]):
     """
@@ -92,13 +93,13 @@ def FindFaces(images: List[str]):
     :param images:
     :return:
     """
-    raise Exception("Batch face detection not yet implemented")
+    raise NotImplementedError("Batch face detection not yet implemented")
     pass
 
 
 # Tests
 class TestFaceRecognizer(unittest.TestCase):
-    test_data_path  = "..\\test-data\\"
+    test_data_path = "..\\test-data\\"
     known_images = [Image(test_data_path + "known\\will.jpg")]
     test_faces = encode_faces(known_images)
     test_person = Person("will", known_images)
@@ -149,4 +150,3 @@ class TestFaceRecognizer(unittest.TestCase):
         unknown_images = encode_faces([self.mushroom])
         faces_found = len(unknown_images[0].encodings_in_image)
         self.assertEqual(0, faces_found, "found a face match when looking at a mushroom")
-
