@@ -1,4 +1,7 @@
 from typing import List, Any
+
+from numpy.core.multiarray import ndarray
+
 from Model import Person
 
 
@@ -9,8 +12,8 @@ class Image:
 
         # Other fields
         self.dbid: int = Any
-        self.encodings_in_image: List
-        self.matched_people = List[Person]
+        self.encodings_in_image: List[ndarray] = Any
+        self.matched_people : List[Person] = Any
 
         self.exif_data = None
         # self.tech_quality: float = Any  # Technical quality (FUTURE)

@@ -1,4 +1,7 @@
 from typing import List, Any
+
+from numpy.core.multiarray import ndarray
+
 from Model.Image import Image
 
 class Person:
@@ -10,7 +13,7 @@ class Person:
         self.known_images = known_images
 
         # Other fields
-        self.encoding = Any
+        self.encoding: ndarray = Any
         self.dbid: int = Any
 
     def __str__(self):

@@ -12,8 +12,6 @@ INSERT INTO images (path, res_x, res_y)
 VALUES ('c:\\temp\\pictures', 1024, 768)
 """)
 
-conn.commit()
-
 results = c.execute("SELECT * FROM images")
 all_rows = results.fetchall()
 pp(all_rows)

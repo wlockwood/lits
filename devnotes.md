@@ -5,6 +5,8 @@ Concept: Locally-run NN tagging for images. To eventually include faces, emotion
 Facial recognition for running in bulk across many images on your local machine.
 An interface for putting names to face groups (many face versions that are all the same person)
 
+!! Even if I don't use an SVM, I can get better matches by allowing each person to have N known pictures for almost no additional cost. This would let me supply a picture with a hat, or sunglasses, and still get good matches. !!
+
 # Development Steps
 * Read image tags
 * Write image tags
@@ -46,6 +48,8 @@ Module breakdown moved to Modules.md
 * Either multiprocess per-picture, or look at the batching approach in f_r
 * Take in a list of analyses to perform rather than assuming f_r is it.
 * Multi-process access to sqlite may run into concurrency issues
+* Test whether images need to be rotated prior to being run through f_r
+   * https://medium.com/@ageitgey/the-dumb-reason-your-fancy-computer-vision-app-isnt-working-exif-orientation-73166c7d39da
 
 # Notes 
 Google Photos can easily create a pre-tagged dataset, in the sense that I can have folders where each picture contains at least that person. Not sure how to handle multiple people this way though.
@@ -55,6 +59,7 @@ How to handle removed photos?
 https://github.com/davidsandberg/facenet* Old but very similar.
 
 What if we identify and rotate faces, *then* crop/resize as necessary just the face?
+
 
 
 
