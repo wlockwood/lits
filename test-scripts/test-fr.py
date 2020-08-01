@@ -4,7 +4,7 @@ from os.path import isfile, join
 from pprint import pprint as pp
 from collections import namedtuple
 from time import perf_counter as pc
-import cv2 as cv
+from dlib import resize_image
 
 print("CWD = ", getcwd())
 
@@ -33,7 +33,7 @@ print(f"Found {len(KnownPeople)} people in {known_folder}:")
 pp([f"{kp.Name} in {kp.SamplePath}" for kp in KnownPeople])
 
 # Get list of file paths for unknowns
-search_path = "test-data\\unknown\\"
+search_path = "../test-data/unknown\\"
 files = [join(search_path, f) for f in listdir(search_path) if isfile(join(search_path, f))]
 print(f"Found {len(files)} unknowns in {search_path}.")
 
@@ -52,11 +52,13 @@ ComparedFace.__str__ = lambda self: f"{self.Person.Name} ({self.Distance:.3f})"
 
 for file in files:
     print(f" - {file} - ")
-    image = cv.imread(file, cv.IMREAD_COLOR)
+    content = fr.load_image_file(file)
 
     # Resize image to around 1k pixels
-    scale_factor = 1000 / image.shape[1]
-    resized = cv.resize(image, None, fx=scale_factor, fy=scale_factor)
+    scale_factor = 750 / max(content.shape[0], content.shape[1])
+    new_x, new_y = int(round(content.shape[0] * scale_factor)), \
+                   int(round(content.shape[1] * scale_factor))
+    resized = resize_image(content, rows=new_y, cols=new_x)
 
     # Recognize faces using face_recognition
     t0 = pc()
