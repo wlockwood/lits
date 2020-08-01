@@ -53,15 +53,23 @@ def match_best(known_people: List[Person], unknown_encodings: List[ndarray], tol
     if type(unknown_encodings[0]) != ndarray:
         raise TypeError(f"unknown_encodings must be of type List[ndarray], but detected {type(unknown_encodings[0])}")
 
+
+    # Flatten list of known people's encodings
+    flat_known_encodings = []
+    flat_known_people = []
+    for kpers in known_people:
+        flat_known_encodings.extend(kpers.encodings)
+        flat_known_people.extend([kpers] * len(kpers.encodings))
+
     # Track actual results
     found_people: List[Person] = []
 
     # Actual facial recognition logic
     for face in unknown_encodings:
-        compare_results = fr.face_distance([x.encoding for x in known_people], face)
+        compare_results = fr.face_distance(flat_known_encodings, face)
 
         # Filter list step by step. I broke this into multiple lines for debugging.
-        possible_matches = [ComparedFace(known_people[i], compare_results[i]) for i in range(len(compare_results))]
+        possible_matches = [ComparedFace(flat_known_people[i], compare_results[i]) for i in range(len(compare_results))]
 
         # Remove faces that too unlike the face we're checking.
         possible_matches: List[ComparedFace] = [x for x in possible_matches if x.Distance < tolerance]
@@ -98,21 +106,36 @@ class TestFaceRecognizer(unittest.TestCase):
     unknown_person = Image(test_data_path + "unknown\\will2.jpg")
     mushroom = Image(test_data_path + "unknown\\mushroom.jpg")
     multiple_people = Image(test_data_path + "unknown\\work group will.jpg")
+    different_person = Image(test_data_path + "unknown\\jackie phone.jpg")
     test_person = Person("will", known_images)
-    test_person.encoding = test_faces[0].encodings_in_image[0]
+    test_person.encodings = [test_faces[0].encodings_in_image[0]]
 
     # Should match when same person
-    def test_match(self):
+    def test_one_to_one_match(self):
         unknown_images = encode_faces([self.unknown_person])
         best_matches = match_best([self.test_person], unknown_images[0].encodings_in_image)
-        self.assertEqual(len(best_matches), 1)
+        self.assertEqual(len(best_matches), 1, "face didn't match itself in another picture")
+
+    def test_multiple_pictures_per_known(self):
+        pass
 
     # Should work with multiple matches in picture
+    def test_multiple_unknown_in_picture(self):
+        unknown_images = encode_faces([self.multiple_people])
+        best_matches = match_best([self.test_person], unknown_images[0].encodings_in_image)
+        self.assertEqual(len(best_matches), 1, "face didn't match with itself in a picture with other people as well")
 
     # Shouldn't match on different person
+    def test_no_match(self):
+        unknown_images = encode_faces([self.different_person])
+        best_matches = match_best([self.test_person], unknown_images[0].encodings_in_image)
+        self.assertEqual(len(best_matches), 0, "face matched against a different face")
 
     # Shouldn't match on a mushroom
-
+    def test_not_a_person(self):
+        unknown_images = encode_faces([self.mushroom])
+        faces_found = len(unknown_images[0].encodings_in_image)
+        self.assertEqual(faces_found, 0, "found a face match when looking at a mushroom")
 
 if __name__ == "__main__":
     test_fixture = TestFaceRecognizer()
