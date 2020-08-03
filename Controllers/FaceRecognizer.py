@@ -102,7 +102,7 @@ class TestFaceRecognizer(unittest.TestCase):
     test_data_path = "..\\test-data\\"
     known_images = [Image(test_data_path + "known\\will.jpg")]
     test_faces = encode_faces(known_images)
-    test_person = Person("will", known_images)
+    test_person = Person("will")
     test_person.encodings = test_faces[0].encodings_in_image
 
     will_as_unknown = Image(test_data_path + "unknown\\will2.jpg")
