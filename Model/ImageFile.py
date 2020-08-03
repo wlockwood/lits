@@ -3,8 +3,6 @@ from typing import List, Any, Dict
 import unittest
 
 # External modules
-import jsonpickle
-import numpy
 from numpy.core.multiarray import ndarray
 import pyexiv2 as pe2
 
@@ -37,10 +35,6 @@ class ImageFile:
         self.xmp: Dict = {}
         if not skip_md_init:
             self.init_metadata()
-
-        # Look for existing face encodings
-        if self.encoding_store_field_name in self.xmp:
-            self.encodings_in_image = self.get_encodings_from_metadata()
 
         # self.tech_quality: float = Any  # Technical quality (FUTURE)
         # self.ae_quality: float = Any # Aesthetic quality (FUTURE)
