@@ -15,7 +15,7 @@ import face_recognition as fr
 print(f"{(pc() - t0) * 1000:.0f}ms: Imported face_recognition")
 
 # Get list of file paths for knowns
-known_folder = "test-data\\known\\"
+known_folder = "..\\test-data\\known\\"
 files = [join(known_folder, f) for f in listdir(known_folder) if isfile(join(known_folder, f))]
 
 # Encode known people
