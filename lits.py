@@ -67,7 +67,7 @@ def main():
     encode_faces(known_person_images, jitter=3)
     known_people: List[Person] = []
     for im in known_person_images:
-        name = path.basename(im.path).split(".")[0:-1][0]
+        name = path.basename(im.filepath).split(".")[0:-1][0]
         new_person = Person(name)
         new_person.encodings = im.encodings_in_image
         known_people.append(new_person)
@@ -79,8 +79,8 @@ def main():
     print(f"{len(images_to_scan):,} images in scanroot")
 
     # Remove images that are in the known folder
-    images_to_scan = [im for im in images_to_scan if path.abspath(im.path)
-                      not in [path.abspath(kpi.path) for kpi in known_person_images]]
+    images_to_scan = [im for im in images_to_scan if path.abspath(im.filepath)
+                      not in [path.abspath(kpi.filepath) for kpi in known_person_images]]
     print(f"{len(images_to_scan):,} images to scan after removing known-person images")
 
     # Encoding images - the bulk of the work
@@ -112,7 +112,7 @@ def main():
         progress_percent = f"{scan_count / total * 100:3.1f}%"
         time_taken = pc() - image_start_time
         matched_people_list = ", ".join(mp.name for mp in image.matched_people)
-        print(progress_percent, f" Found {len(image.encodings_in_image)} faces in '{image.path}':",
+        print(progress_percent, f" Found {len(image.encodings_in_image)} faces in '{image.filepath}':",
               f"{matched_people_list} ({time_taken:.1f}s)")
     print(f"Done encoding {total:,} images. ({pc() - start_time:.0f}s total)")
 

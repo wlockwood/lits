@@ -23,7 +23,7 @@ def encode_faces(images: List[Image], jitter: int = 1, resize_to: int = 750) -> 
 
     encoded_faces = []
     for image in images:
-        content = fr.load_image_file(image.path)
+        content = fr.load_image_file(image.filepath)
         scale_factor = resize_to / max(content.shape[0], content.shape[1])
         new_x, new_y = int(round(content.shape[0] * scale_factor)), \
                        int(round(content.shape[1] * scale_factor))

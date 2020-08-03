@@ -13,8 +13,8 @@ images_to_scan = [Image(path.join(scan_path, f)) for f in listdir(scan_path)
 
 image = Image(r"..\test-data\unknown\sam tongue out.jpg")
 
-print("Reading file ", image.path)
-with open(image.path, 'rb+') as file:
+print("Reading file ", image.filepath)
+with open(image.filepath, 'rb+') as file:
     with pe2.ImageData(file.read()) as imdat:
         data = imdat.read_iptc(encoding=Image.normal_encoding)
 pp(data)

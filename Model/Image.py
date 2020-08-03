@@ -16,16 +16,16 @@ class Image:
     keyword_field_name = "Iptc.Application2.Keywords"
     normal_encoding = "ISO-8859-1"  # Single-byte unicode approximation
 
-    def __init__(self, path: str, skip_md_init: bool = False):
+    def __init__(self, filepath: str, skip_md_init: bool = False):
         """
-        :param path: Path to an image file
+        :param filepath: Path to an image file
         :param skip_md_init: Skip initializing metadata. Mostly for unit tests.
         """
         # Parameters
-        self.path = path
+        self.filepath = filepath
 
         # Other fields
-        self.extension = self.path.split(".")[-1]
+        self.extension = self.filepath.split(".")[-1]
         self.dbid: int = Any
         self.encodings_in_image: List[ndarray] = []
         self.matched_people: List[Person] = []
@@ -46,7 +46,7 @@ class Image:
         # self.ae_quality: float = Any # Aesthetic quality (FUTURE)
 
     def __str__(self):
-        return self.path
+        return self.filepath
 
     def __repr__(self):
         f"Image ({str(self)})"
@@ -62,7 +62,7 @@ class Image:
         Load IPTC metadata for this image.
         :return: Fields with data in them.
         """
-        file = pe2.Image(self.path)
+        file = pe2.Image(self.filepath)
         self.iptc = file.read_iptc(encoding=self.normal_encoding)
         self.exif = file.read_exif(encoding=self.normal_encoding)
         self.xmp = file.read_xmp(encoding=self.normal_encoding)
@@ -71,7 +71,7 @@ class Image:
 
     def clear_keywords(self):
         patch = {self.keyword_field_name: ""}
-        loaded = pe2.Image(self.path)
+        loaded = pe2.Image(self.filepath)
         loaded.modify_iptc(patch, encoding=Image.normal_encoding)
         loaded.close()
 
@@ -107,7 +107,7 @@ class Image:
         current_string: str = ",".join(current)
 
         patch = {self.keyword_field_name: current_string}
-        loaded = pe2.Image(self.path)
+        loaded = pe2.Image(self.filepath)
         loaded.modify_iptc(patch, encoding=Image.normal_encoding)
         loaded.close()
 
@@ -127,7 +127,7 @@ class Image:
 
         # Write to file
         patch = {self.encoding_store_field_name: to_write}
-        loaded = pe2.Image(self.path)
+        loaded = pe2.Image(self.filepath)
         loaded.modify_iptc(patch, encoding=Image.normal_encoding)
         loaded.close()
 
