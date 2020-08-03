@@ -99,7 +99,10 @@ def FindFaces(images: List[str]):
 
 # Tests
 class TestFaceRecognizer(unittest.TestCase):
-    test_data_path = "..\\test-data\\"
+    test_data_prefix = ""
+    if __name__ == "__main__":
+        test_data_prefix = "..\\"
+    test_data_path = test_data_prefix + "test-data\\"
     known_images = [Image(test_data_path + "known\\will.jpg")]
     test_faces = encode_faces(known_images)
     test_person = Person("will")

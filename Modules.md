@@ -14,7 +14,8 @@ Represents an image on disk that may or may not yet have been processed, or may 
 
 ? How should this be initialized? What's the absolute minimum we can have and still have a valid image? Path?
 ? Which fields should we write tags to? How should they be formatted?
-    * Write encodings to comments as every other field is too small. Later, XMP.
+    * ~~Write encodings to comments as every other field is too small. Later, XMP.~~
+    * Don't write encodings to the scanned file, it will fail if there's more than once face due to the character limit of the largest IPTC field.
 
 * Is_Tracked -> bool - Is this in the database right now?
 * People: List[Person] - List of people in this image

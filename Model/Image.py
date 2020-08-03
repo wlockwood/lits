@@ -1,14 +1,21 @@
+# Builtins
 from typing import List, Any
-
-import numpy
-from numpy.core.multiarray import ndarray
-
-from iptcinfo3 import IPTCInfo
-
-from Model import Person
 import unittest
 
+# External libraries
+import numpy
+from numpy.core.multiarray import ndarray
+from iptcinfo3 import IPTCInfo
+
+# Custom code
+from Model import Person
+
+# Temporary
+import os # related to bug in iptcinfo
+
+
 class Image:
+    encodings_in_image: List[ndarray]
     # Extracted from IPTCInfo
     iptc_field_list = ['object name', 'edit status', 'editorial update', 'urgency', 'subject reference', 'category',
             'supplemental category', 'fixture identifier', 'keywords', 'content location code', 'content location name',
@@ -30,8 +37,8 @@ class Image:
         # Other fields
         self.extension = self.path.split(".")[-1]
         self.dbid: int = Any
-        self.encodings_in_image: List[ndarray] = Any
-        self.matched_people : List[Person] = Any
+        self.encodings_in_image: List[ndarray] = []
+        self.matched_people: List[Person] = []
         self.iptcinfo = None
 
         # self.exif_data = None = Any # (FUTURE)
@@ -54,34 +61,55 @@ class Image:
         return len([self.iptcinfo[x] is not None for x in self.iptc_field_list])
 
     def get_keywords(self):
-        pass
+        if self.iptcinfo == None:
+            self.init_iptc()
 
-    def set_keywords(self):
-        pass
+        return self.iptcinfo["keywords"]
 
-    def set_encoding_in_metadata(self, encoding: ndarray):
+    def append_keyword(self, to_append: str) -> bool:
+        """
+        Appends one keyword to the keyword list.
+        :param to_append: Keyword to append
+        :return: Whether the keyword was new (True) or already existed (False)
+        """
+        if self.iptcinfo == None:
+            self.init_iptc()
+        if to_append not in self.iptcinfo["keywords"]:
+            self.iptcinfo["keywords"].append(to_append)
+            return True
+        return False
+
+    def set_encoding_in_metadata(self, encodings: List[ndarray]):
         """
 
         :return:
         """
-        e_bytes = encoding.tobytes()
-        self.iptcinfo[self.encoding_store_field_name] = e_bytes
+        as_bytes = [str(enc.tobytes()) for enc in encodings]
+        to_write = '\n'.join(as_bytes)
+        self.iptcinfo[self.encoding_store_field_name] = to_write
 
 
-    def get_encodings_from_metadata(self) -> ndarray:
+    def get_encodings_from_metadata(self) -> List[ndarray]:
         """
         Look in the comment field for a pydarray stored as bytes.
         :return: Found encoding as ndarray, or None if nothing found
         """
         try:
-            e_bytes = self.iptcinfo[self.encoding_store_field_name]
-            array = numpy.frombuffer(e_bytes, dtype="float64")
-            return array
+            read_text = self.iptcinfo[self.encoding_store_field_name]
+            list_e_bytes = [numpy.frombuffer(bytes, dtype="float64") for bytes in read_text.split("\n")]
+            return list_e_bytes
         except Exception:
             return None
 
     def save_iptc(self):
-        self.iptcinfo.save()
+        self.iptcinfo.save_as(self.path)
+
+        # This is due to a bug in iptcinfo3: https://github.com/jamesacampbell/iptcinfo3/issues/22
+        try:
+            os.remove(self.path + "~")
+        except OSError:
+            pass
+
 
     @staticmethod
     def disable_iptc_errors() -> None:

@@ -11,8 +11,9 @@ class Person:
         self.name = name
 
         # Other fields
-        self.encodings: List[ndarray] = Any
+        self.encodings: List[ndarray] = []
         self.dbid: int = Any
+        self.known_images: List[Image] = []
 
     def __str__(self):
         return self.name
@@ -25,3 +26,6 @@ class Person:
     def from_db_row(row) -> "Person":
         pass
         # This may end up being many DB rows
+
+#At end to avoid circular reference explosion
+from Model.Image import Image
