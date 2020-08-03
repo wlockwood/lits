@@ -61,5 +61,5 @@ Development environment is Windows, so installation assumes that. Installing in 
         python setup.py install --yes USE_AVX_INSTRUCTIONS --yes DLIB_USE_CUDA
         ```
 1. Install face_recognition: `pip install face_recognition`.
-1. Install iptcinfo3: `pip install iptcinfo3`
+1. Install pyexiv2: `pip install pyexiv2`
 

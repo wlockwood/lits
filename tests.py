@@ -2,11 +2,10 @@
 import unittest
 import uuid
 from os import path
-from pprint import pprint as pp
 
 # Custom modules
 from Controllers.FaceRecognizer import encode_faces, match_best
-from Model.Image import Image
+from Model.ImageFile import ImageFile
 from Model.Person import Person
 
 
@@ -14,16 +13,16 @@ class TestFaceRecognizer(unittest.TestCase):
     my_dir = path.dirname(__file__)
     test_data_path = "test-data\\"
 
-    known_images = [Image(test_data_path + "known\\will.jpg", skip_md_init=True)]
+    known_images = [ImageFile(test_data_path + "known\\will.jpg", skip_md_init=True)]
     test_faces = encode_faces(known_images)
     test_person = Person("will")
     test_person.encodings = test_faces[0].encodings_in_image
 
-    will_as_unknown = Image(test_data_path + "unknown\\will2.jpg", skip_md_init=True)
-    sam_will_trail = Image(test_data_path + "unknown\\sam will trail 2.jpg", skip_md_init=True)
-    mushroom = Image(test_data_path + "unknown\\mushroom.jpg", skip_md_init=True)
-    multiple_people = Image(test_data_path + "unknown\\work group will.jpg", skip_md_init=True)
-    different_person = Image(test_data_path + "unknown\\jackie phone.jpg", skip_md_init=True)
+    will_as_unknown = ImageFile(test_data_path + "unknown\\will2.jpg", skip_md_init=True)
+    sam_will_trail = ImageFile(test_data_path + "unknown\\sam will trail 2.jpg", skip_md_init=True)
+    mushroom = ImageFile(test_data_path + "unknown\\mushroom.jpg", skip_md_init=True)
+    multiple_people = ImageFile(test_data_path + "unknown\\work group will.jpg", skip_md_init=True)
+    different_person = ImageFile(test_data_path + "unknown\\jackie phone.jpg", skip_md_init=True)
 
     # Should match when same person
     def test_one_to_one_match(self):
@@ -33,8 +32,8 @@ class TestFaceRecognizer(unittest.TestCase):
 
     def test_multiple_pictures_per_known(self):
         # Requires more convoluted test setup for the known person
-        known_images = [Image(self.test_data_path + "known\\will\\will.jpg"),
-                        Image(self.test_data_path + "known\\will\\will sunglass hat.png")]
+        known_images = [ImageFile(self.test_data_path + "known\\will\\will.jpg"),
+                        ImageFile(self.test_data_path + "known\\will\\will sunglass hat.png")]
         encode_faces(known_images)
         test_person = Person("will")
         test_person.encodings = [enc for im in known_images for enc in im.encodings_in_image]  # Flat?
@@ -67,7 +66,7 @@ class TestFaceRecognizer(unittest.TestCase):
 
 
 class TestImage(unittest.TestCase):
-    test_image = Image(r"test-image.jpg")
+    test_image = ImageFile(r"test-image.jpg")
 
     def setUp(self):
         self.test_image.clear_keywords()

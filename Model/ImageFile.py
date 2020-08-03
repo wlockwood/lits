@@ -11,7 +11,7 @@ import pyexiv2 as pe2
 # Custom code
 
 
-class Image:
+class ImageFile:
     encoding_store_field_name = "Xmp.dc.Description"  # TODO: Extend pyexiv2 to support custom namespaces
     keyword_field_name = "Iptc.Application2.Keywords"
     normal_encoding = "ISO-8859-1"  # Single-byte unicode approximation
@@ -72,7 +72,7 @@ class Image:
     def clear_keywords(self):
         patch = {self.keyword_field_name: ""}
         loaded = pe2.Image(self.filepath)
-        loaded.modify_iptc(patch, encoding=Image.normal_encoding)
+        loaded.modify_iptc(patch, encoding=ImageFile.normal_encoding)
         loaded.close()
 
         self.iptc[self.keyword_field_name] = ""
@@ -108,23 +108,12 @@ class Image:
 
         patch = {self.keyword_field_name: current_string}
         loaded = pe2.Image(self.filepath)
-        loaded.modify_iptc(patch, encoding=Image.normal_encoding)
+        loaded.modify_iptc(patch, encoding=ImageFile.normal_encoding)
         loaded.close()
 
         self.iptc[self.keyword_field_name] = current_string
 
         return new_kws
-
-    @staticmethod
-    def from_db_row(row) -> "Image":
-        """
-        Create an Image instance from a database row
-        :return:
-        """
-        pass
-
-    def to_db_row(self):
-        pass
 
 # Circular import
 from Model import Person

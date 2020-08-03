@@ -13,7 +13,7 @@ class Person:
         # Other fields
         self.encodings: List[ndarray] = []
         self.dbid: int = Any
-        self.known_images: List[Image] = []
+        self.known_images: List[ImageFile] = []
 
     def __str__(self):
         return self.name
@@ -28,4 +28,4 @@ class Person:
         # This may end up being many DB rows
 
 # Circular import
-from Model.Image import Image
+from Model.ImageFile import ImageFile

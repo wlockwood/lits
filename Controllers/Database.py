@@ -1,4 +1,5 @@
 import sqlite3
+from Model.ImageFile import ImageFile
 
 class Database:
     open_connections = []
@@ -25,3 +26,21 @@ class Database:
     def close_all(cls):
         for c in cls.open_connections:
             c.close()
+
+
+    def create_schema(self):
+        """
+        Initializes an empty database.
+        :return:
+        """
+        create_tables = """
+        CREATE TABLE IF NOT EXISTS Image    --A single image file per row
+        (id INTEGER PRIMARY KEY, filename TEXT, date_modified DATETIME, size_bytes INT)
+        
+        CREATE TABLE IF NOT EXISTS Person   --A single indvidual person per row
+        (id INTEGER PRIMARY KEY, name TEXT)
+        
+        CREATE TABLE IF NOT EXISTS ImagePerson  --A relationship between an image and a person
+        (id INTEGER PRIMARY KEY, image_id INT, person_id INT)
+        """
+        self.connection.execute(create_tables)

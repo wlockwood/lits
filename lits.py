@@ -18,14 +18,14 @@ GitHub: wlockwood/lits
 # Builtins
 import argparse
 from os import path, getcwd, listdir
-from typing import List, Any
+from typing import List
 from time import perf_counter as pc
 from datetime import datetime
 # External modules
 
 # Custom modules
 from Model.Person import Person
-from Model.Image import Image
+from Model.ImageFile import ImageFile
 from Controllers.Database import Database
 from Controllers.FaceRecognizer import encode_faces, match_best
 
@@ -61,7 +61,7 @@ def main():
     # TODO: Check with the database and merge with/filter filesystem results
     # TODO: Add support for people folders instead of just single pictures
     # TODO: Filter for supported file types.
-    known_person_images = [Image(path.join(args.known, f)) for f in listdir(args.known)
+    known_person_images = [ImageFile(path.join(args.known, f)) for f in listdir(args.known)
                            if path.isfile(path.join(args.known, f))]
     print(f"{len(known_person_images):,} images of known people")
     encode_faces(known_person_images, jitter=3)
@@ -74,7 +74,7 @@ def main():
 
 
     # Build list of files to scan
-    images_to_scan = [Image(path.join(args.scanroot, f)) for f in listdir(args.scanroot)
+    images_to_scan = [ImageFile(path.join(args.scanroot, f)) for f in listdir(args.scanroot)
                       if path.isfile(path.join(args.scanroot, f))]
     print(f"{len(images_to_scan):,} images in scanroot")
 
@@ -136,3 +136,4 @@ def soft_exit(message: str = ""):
 
 if __name__ == "__main__":
     main()
+    soft_exit("Done!")

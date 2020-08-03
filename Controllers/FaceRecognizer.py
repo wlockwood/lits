@@ -3,7 +3,7 @@ from collections import namedtuple
 from numpy.core.multiarray import ndarray  # Encoded faces
 
 from Model.Person import Person
-from Model.Image import Image
+from Model.ImageFile import ImageFile
 import face_recognition as fr
 from dlib import resize_image
 from os import path
@@ -11,7 +11,7 @@ from os import path
 import unittest
 
 
-def encode_faces(images: List[Image], jitter: int = 1, resize_to: int = 750) -> List[Image]:
+def encode_faces(images: List[ImageFile], jitter: int = 1, resize_to: int = 750) -> List[ImageFile]:
     """
     Populates the encodings_in_image field of an Image
     :param images: A list of image paths to encode the faces of
