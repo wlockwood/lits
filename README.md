@@ -1,7 +1,7 @@
 # LITS: Local Image Tagging and Search
-Locally-run CNN tagging for images. To eventually include faces, emotion, quality, and more.
+Locally-run neural-network tagging for images. To eventually include faces, emotion, quality, and more.
 
-LITS will scan all pictures found in a specified folder and apply face recognition to all supported file formats and keep track of which people are in which images by writing known, found people to the IPTC tags of a picture. This allows those pictures to be searched from photography library management tools such as Photoshop Lightroom. 
+LITS generates encoded versions of known people and will scan all pictures found in a specified folder, apply face recognition to all supported file formats and keep track of which people are in which images by writing known, found people to the metadata tags of a picture. This allows those pictures to be searched from photography library management tools such as Photoshop Lightroom. 
 
 Initially, LITS will only _tag_ images to enable search elsewhere, but future versions will supply a facility for querying the internal database.
 
@@ -61,4 +61,5 @@ Development environment is Windows, so installation assumes that. Installing in 
         python setup.py install --yes USE_AVX_INSTRUCTIONS --yes DLIB_USE_CUDA
         ```
 1. Install face_recognition: `pip install face_recognition`.
+1. Install iptcinfo3: `pip install iptcinfo3`
 

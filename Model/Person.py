@@ -27,5 +27,5 @@ class Person:
         pass
         # This may end up being many DB rows
 
-#At end to avoid circular reference explosion
+# Circular import
 from Model.Image import Image

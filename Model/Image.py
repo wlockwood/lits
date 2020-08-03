@@ -12,7 +12,7 @@ import pyexiv2 as pe2
 
 
 class Image:
-    encoding_store_field_name = "Xmp.dc.face_encodings"  # Custom tag. Unsure on the dc (Dublin Core) namespace
+    encoding_store_field_name = "Xmp.dc.Description"  # TODO: Extend pyexiv2 to support custom namespaces
     keyword_field_name = "Iptc.Application2.Keywords"
     normal_encoding = "ISO-8859-1"  # Single-byte unicode approximation
 
@@ -35,7 +35,8 @@ class Image:
         self.iptc: Dict = {}
         self.exif: Dict = {}
         self.xmp: Dict = {}
-        self.init_metadata()
+        if not skip_md_init:
+            self.init_metadata()
 
         # Look for existing face encodings
         if self.encoding_store_field_name in self.xmp:
@@ -68,11 +69,21 @@ class Image:
         file.close()
         self.md_init_complete = True
 
-    def get_keywords(self) -> List[str]:
-        if not self.md_init_complete:
+    def clear_keywords(self):
+        patch = {self.keyword_field_name: ""}
+        loaded = pe2.Image(self.path)
+        loaded.modify_iptc(patch, encoding=Image.normal_encoding)
+        loaded.close()
+
+        self.iptc[self.keyword_field_name] = ""
+
+    def get_keywords(self, force_refresh: bool = False) -> List[str]:
+        if not self.md_init_complete or force_refresh:
             self.init_metadata()
+
+
         field_data = self.iptc.get("Iptc.Application2.Keywords", "")
-        return field_data.split(",")
+        return field_data.split(",") if len(field_data) > 0 else []
 
 
     def append_keywords(self, to_append: List[str]) -> int:
@@ -87,28 +98,35 @@ class Image:
         current = self.get_keywords()
 
         new_kws = 0
-        if to_append not in current:
-            current.append(to_append)
-            new_kws += 1
+        for keyword in to_append:
+            if keyword not in current:
+                current.append(keyword)
+                new_kws += 1
+        if len(current) > 0 and type(current[0]) != str:
+            print("BUG!")
+        current_string: str = ",".join(current)
 
-        patch = {self.keyword_field_name: ",".join(current)}
+        patch = {self.keyword_field_name: current_string}
         loaded = pe2.Image(self.path)
         loaded.modify_iptc(patch, encoding=Image.normal_encoding)
         loaded.close()
 
+        self.iptc[self.keyword_field_name] = current_string
+
         return new_kws
+
 
 
     def set_encodings_in_metadata(self, encodings: List[ndarray]):
         """
-
+        FUTURE. Get facial encodings from image metadata.
         :return:
         """
-        as_bytes = [str(enc.tobytes()) for enc in encodings]
-        to_write = '\n'.join(as_bytes)
+        raise NotImplementedError("Not working yet.")
+        to_write = jsonpickle.encode(encodings)
 
         # Write to file
-        patch = {self.keyword_field_name: to_write}
+        patch = {self.encoding_store_field_name: to_write}
         loaded = pe2.Image(self.path)
         loaded.modify_iptc(patch, encoding=Image.normal_encoding)
         loaded.close()
@@ -116,20 +134,21 @@ class Image:
 
     def get_encodings_from_metadata(self, assign: bool = True) -> List[ndarray]:
         """
-        Look in the comment field for a pydarray stored as bytes.
+        FUTURE. Look in the comment field for facial encodings.
         :return: Found encoding as ndarray, or None if nothing found
         """
+        raise NotImplementedError("Not working yet.")
         if not self.md_init_complete:
             self.init_metadata()
 
         if self.encoding_store_field_name not in self.xmp:
             return None
         read_text = self.xmp[self.encoding_store_field_name]
-        text_list = [bytes(string_form, encoding=self.normal_encoding) for string_form in read_text.split("\n")]
-        list_e_bytes = [numpy.frombuffer(bytes, dtype="float64") for bytes in text_list]
+        encodings = jsonpickle.decode(read_text)
+
         if assign:
-            self.encodings_in_image = list_e_bytes
-        return list_e_bytes
+            self.encodings_in_image = encodings
+        return encodings
 
 
 
