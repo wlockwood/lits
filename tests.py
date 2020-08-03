@@ -69,27 +69,6 @@ class TestFaceRecognizer(unittest.TestCase):
 class TestImage(unittest.TestCase):
     test_image = Image(r"test-image.jpg")
 
-    # Tests unused code now
-    @unittest.skip("Not yet working")
-    def test_encoding_rw_cycle(self):
-        test_encoding = encode_faces([self.test_image])[0].encodings_in_image[0]
-        self.test_image.init_metadata()
-        print("Pre-write XMP data")
-        pp(self.test_image.xmp)
-
-        self.test_image.set_encodings_in_metadata(self.test_encoding)
-
-        self.test_image.init_metadata()
-        print("Post-write XMP data")
-        pp(self.test_image.xmp)
-        readout = self.test_image.get_encodings_from_metadata()
-        all_match = True
-        for i in range(len(self.test_encoding)):
-            if self.test_encoding[i] != readout[i]:
-                all_match = False
-                break
-        self.assertEqual(True, all_match, "test array doesn't match itself after having been written to and from file")
-
     def setUp(self):
         self.test_image.clear_keywords()
 

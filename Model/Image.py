@@ -115,43 +115,6 @@ class Image:
 
         return new_kws
 
-
-
-    def set_encodings_in_metadata(self, encodings: List[ndarray]):
-        """
-        FUTURE. Get facial encodings from image metadata.
-        :return:
-        """
-        raise NotImplementedError("Not working yet.")
-        to_write = jsonpickle.encode(encodings)
-
-        # Write to file
-        patch = {self.encoding_store_field_name: to_write}
-        loaded = pe2.Image(self.filepath)
-        loaded.modify_iptc(patch, encoding=Image.normal_encoding)
-        loaded.close()
-
-
-    def get_encodings_from_metadata(self, assign: bool = True) -> List[ndarray]:
-        """
-        FUTURE. Look in the comment field for facial encodings.
-        :return: Found encoding as ndarray, or None if nothing found
-        """
-        raise NotImplementedError("Not working yet.")
-        if not self.md_init_complete:
-            self.init_metadata()
-
-        if self.encoding_store_field_name not in self.xmp:
-            return None
-        read_text = self.xmp[self.encoding_store_field_name]
-        encodings = jsonpickle.decode(read_text)
-
-        if assign:
-            self.encodings_in_image = encodings
-        return encodings
-
-
-
     @staticmethod
     def from_db_row(row) -> "Image":
         """
