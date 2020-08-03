@@ -59,7 +59,7 @@ class Image:
     def set_keywords(self):
         pass
 
-    def set_encoding_to_iptc(self, encoding: ndarray):
+    def set_encoding_in_metadata(self, encoding: ndarray):
         """
 
         :return:
@@ -68,7 +68,7 @@ class Image:
         self.iptcinfo[self.encoding_store_field_name] = e_bytes
 
 
-    def get_encodings_from_iptc(self) -> ndarray:
+    def get_encodings_from_metadata(self) -> ndarray:
         """
         Look in the comment field for a pydarray stored as bytes.
         :return: Found encoding as ndarray, or None if nothing found
@@ -112,10 +112,10 @@ class TestImage(unittest.TestCase):
 
     def test_rw_cycle(self):
         self.test_image.init_iptc()
-        self.test_image.set_encoding_to_iptc(self.test_encoding)
+        self.test_image.set_encoding_in_metadata(self.test_encoding)
         self.test_image.save_iptc()
 
-        readout = self.test_image.get_encodings_from_iptc()
+        readout = self.test_image.get_encodings_from_metadata()
         all_match = True
         for i in range(len(self.test_encoding)):
             if self.test_encoding[i] != readout[i]:
