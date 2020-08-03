@@ -5,3 +5,4 @@ face_recognition_repo
 *.png
 .idea
 *.db
+!test-image.jpg
