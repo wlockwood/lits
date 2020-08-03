@@ -2,15 +2,13 @@ from typing import List, Any
 
 from numpy.core.multiarray import ndarray
 
-from Model.Image import Image
 
 class Person:
     """An identified (name<->picture correlation) person."""
 
-    def __init__(self, name: str, known_images: List[Image]):
+    def __init__(self, name: str):
         # Parameters
         self.name = name
-        self.known_images = known_images
 
         # Other fields
         self.encodings: List[ndarray] = Any
@@ -21,6 +19,7 @@ class Person:
 
     def __repr__(self):
         return f"Person({str(self)}"
+
 
     @staticmethod
     def from_db_row(row) -> "Person":
