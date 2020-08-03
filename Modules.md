@@ -14,6 +14,7 @@ Represents an image on disk that may or may not yet have been processed, or may 
 
 ? How should this be initialized? What's the absolute minimum we can have and still have a valid image? Path?
 ? Which fields should we write tags to? How should they be formatted?
+    * Write encodings to comments as every other field is too small. Later, XMP.
 
 * Is_Tracked -> bool - Is this in the database right now?
 * People: List[Person] - List of people in this image
@@ -38,6 +39,7 @@ Solutions:
 * Reading/writing IPTC: [iptcinfo3](https://github.com/jamesacampbell/iptcinfo3) (install from pip)
 * Reading/writing EXIF: [piexif](https://pypi.org/project/piexif/) (install from pip)
 * Reading/writing NTFS metadata? `os.path.getmtime(path)` gives modified time. Good enough?
+* Reading/writing IPTC, EXIF, and XMP: [pyexiv2](https://github.com/LeoHsiao1/pyexiv2)
 
 ## Database interactions
 SQLite is [built in](https://docs.python.org/3/library/sqlite3.html) (`import sqlite3`)
