@@ -1,5 +1,7 @@
 import sqlite3
 from Model.ImageFile import ImageFile
+from pprint import pprint as pp
+import os
 
 class Database:
     open_connections = []
@@ -35,12 +37,30 @@ class Database:
         """
         create_tables = """
         CREATE TABLE IF NOT EXISTS Image    --A single image file per row
-        (id INTEGER PRIMARY KEY, filename TEXT, date_modified DATETIME, size_bytes INT)
+        (id INTEGER PRIMARY KEY, filename TEXT, path TEXT, date_modified DATETIME, size_bytes INT);
         
-        CREATE TABLE IF NOT EXISTS Person   --A single indvidual person per row
-        (id INTEGER PRIMARY KEY, name TEXT)
+        CREATE TABLE IF NOT EXISTS Person   --A single individual person per row
+        (id INTEGER PRIMARY KEY, name TEXT, encoding TEXT);
         
         CREATE TABLE IF NOT EXISTS ImagePerson  --A relationship between an image and a person
-        (id INTEGER PRIMARY KEY, image_id INT, person_id INT)
+        (id INTEGER PRIMARY KEY, image_id INT, person_id INT);
+        
+        CREATE TABLE IF NOT EXISTS ImageFaceEncoding    --An encoded version of a face found in an image
+        (id INTEGER PRIMARY KEY, image_id INT, encoding TEXT);
+        
+        CREATE INDEX IF NOT EXISTS idx_person_in_images ON ImagePerson (person_id);
         """
-        self.connection.execute(create_tables)
+        self.connection.executescript(create_tables)
+        all_tables = self.connection.execute(
+            "SELECT name FROM sqlite_master WHERE type IN ('table','view','index') AND name NOT LIKE 'sqlite_%'").fetchall()
+        pp(all_tables)
+
+if __name__ == "__main__":
+    test_db_path = "test.db"
+    try:
+        os.remove(test_db_path)
+    except:
+        # It's fine if it fails, but it usually won't.
+        pass
+    test_db = Database(test_db_path)
+    test_db.create_schema()

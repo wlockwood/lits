@@ -37,7 +37,7 @@ Needs:
 Solutions:
 * Reading image data: handled by dlib and face_recognition
 * ~~Pillow can read and write some IPTC, and can read EXIF~~ This might result in re-compressing JPGs, which is lossy.
-* Reading/writing IPTC: [iptcinfo3](https://github.com/jamesacampbell/iptcinfo3) (install from pip)
+* ~~Reading/writing IPTC: [iptcinfo3](https://github.com/jamesacampbell/iptcinfo3) (install from pip)~~ This was so buggy that I replaced it with pyexiv2.
 * Reading/writing EXIF: [piexif](https://pypi.org/project/piexif/) (install from pip)
 * Reading/writing NTFS metadata? `os.path.getmtime(path)` gives modified time. Good enough?
 * Reading/writing IPTC, EXIF, and XMP: [pyexiv2](https://github.com/LeoHsiao1/pyexiv2)
@@ -48,6 +48,7 @@ SQLite is [built in](https://docs.python.org/3/library/sqlite3.html) (`import sq
 * ImageFile
 * KnownPerson
 
+Should look at https://medium.com/better-programming/how-to-hash-in-python-8bf181806141, especially simfile, which detects near misses
 
 ## To be fleshed out
 * Image file manipulation (read/write images and tags)
