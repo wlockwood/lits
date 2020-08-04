@@ -27,6 +27,7 @@ class ImageFile:
         self.dbid: int = Any
         self.encodings_in_image: List[ndarray] = []
         self.matched_people: List[Person] = []
+        self.in_database = False
 
         # Metadata fields
         self.md_init_complete = False
