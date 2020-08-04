@@ -29,6 +29,8 @@ from Model.ImageFile import ImageFile
 from Controllers.Database import Database
 from Controllers.FaceRecognizer import encode_faces, match_best
 
+valid_extensions = [".jpg", ".png", ".bmp", ".gif"]
+
 
 def main():
     print("LITS initializing...")
@@ -40,43 +42,34 @@ def main():
     parser.add_argument("--known", help="Directory of known people's faces", required=True)
     parser.add_argument("--db", help="Path to the database file or where to create it", default="lits.db")
     parser.add_argument("--tolerance", help="Lower forces stricter matches", default=0.6, type=float)
-    # TODO: Add "--clear-keywords"?
+    # TODO: Add "--clear-keywords"? Would ignore pre-existing keywords when applying new
+    # TODO: Add "--rescan"? Would ignore encodings cached in database
     args = parser.parse_args()
-
-    def validate_path_exists(check_path: str, name: str):
-        if path.exists(check_path):
-            print(f"'{name}' will be '{path.abspath(check_path)}'.")
-        else:
-            soft_exit(f"'{name}' path doesn't exist or is inaccessible. Evaluated to:\n\t{path.abspath(check_path)}")
 
     validate_path_exists(args.scanroot, "scanroot")
     validate_path_exists(args.known, "known")
-    if not (path.isdir(args.scanroot) and path.isdir(args.known)):
-        print()
-    validate_path_exists(args.scanroot, "db")
+    validate_path_exists(args.db, "db")
 
     # Initialize database
-    db = Database(args.db)  # TODO: And then initialize
+    db = Database(args.db)
 
     # Initialize list of known people
-    # TODO: Check with the database and merge with/filter filesystem results
     # TODO: Add support for people folders instead of just single pictures
     # TODO: Filter for supported file types.
-    known_person_images = [ImageFile(path.join(args.known, f)) for f in listdir(args.known)
-                           if path.isfile(path.join(args.known, f))]
+    known_person_images = get_all_compatible_files(args.known)
     print(f"{len(known_person_images):,} images of known people")
     encode_faces(known_person_images, jitter=3)
+
     known_people: List[Person] = []
     for im in known_person_images:
-        name = path.basename(im.filepath).split(".")[0:-1][0]
+        name, extension = path.splitext(im.filepath)
         new_person = Person(name)
         new_person.encodings = im.encodings_in_image
         known_people.append(new_person)
 
 
     # Build list of files to scan
-    images_to_scan = [ImageFile(path.join(args.scanroot, f)) for f in listdir(args.scanroot)
-                      if path.isfile(path.join(args.scanroot, f))]
+    images_to_scan = get_all_compatible_files(args.scanroot)
     print(f"{len(images_to_scan):,} images in scanroot")
 
     # Remove images that are in the known folder
@@ -126,6 +119,29 @@ def main():
     Faces found per image
     Most-common person found
     """
+
+
+def validate_path_exists(check_path: str, name: str):
+    if path.exists(check_path):
+        print(f"'{name}' will be '{path.abspath(check_path)}'.")
+    else:
+        soft_exit(f"'{name}' path doesn't exist or is inaccessible. Evaluated to:\n\t{path.abspath(check_path)}")
+
+
+def get_all_compatible_files(folderpath: str):
+    all_files = [path.join(folderpath, file) for file in listdir(folderpath)
+                 if path.isfile(path.join(folderpath, file))
+
+                 ]
+    valid_files = [f for f in all_files if path.splitext(f)[1] in valid_extensions]
+    as_images = [ImageFile(f) for f in all_files]
+    return as_images
+
+
+def check_images_against_database(database: Database, images: List[ImageFile]):
+    for image in images:
+        database.get_image_data_by_attributes(image)
+
 
 def soft_exit(message: str = ""):
     if message:
