@@ -24,7 +24,7 @@ class ImageFile:
 
         # Other fields
         self.extension = self.filepath.split(".")[-1]
-        self.dbid: int = Any
+        self.dbid: int = -1
         self.encodings_in_image: List[ndarray] = []
         self.matched_people: List[Person] = []
         self.in_database = False

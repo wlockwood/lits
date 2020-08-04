@@ -73,7 +73,7 @@ class Database:
 
         CREATE TABLE IF NOT EXISTS Encoding --Encoded version of a face found in an image
             (id INTEGER PRIMARY KEY, 
-            encoding TEXT);
+            encoding BLOB);
 
         CREATE TABLE IF NOT EXISTS ImageEncoding    --A relationship between an image and an encoding
             (id INTEGER PRIMARY KEY, 
@@ -155,8 +155,8 @@ class Database:
         """
         # Insert
         sql = "INSERT INTO Encoding (encoding) VALUES (?)"
-        encoding_string = str(encoding.tobytes())
-        dbresponse = self.connection.execute(sql, [encoding_string])
+        encoding_bytes = encoding.tobytes()
+        dbresponse = self.connection.execute(sql, [encoding_bytes])
         dbid = dbresponse.lastrowid
 
         self.associate_encoding(dbid, associate_id, person, image)
@@ -193,16 +193,21 @@ class Database:
         sql = "SELECT * FROM Image WHERE filename = ? AND date_modified = ? AND size_bytes = ?"
         params = self.adapt_ImageFile(image, include_path=False)
         dbresponse = self.connection.execute(sql, params)
-        if dbresponse.rowcount > 1:
+        result = dbresponse.fetchall()
+
+        if len(result) > 1:
             raise Exception(f"Multiple Image records matched the file  '{image.filepath}'")
-        if dbresponse.rowcount < 1:
+        if len(result) < 1:
             return None
 
-        image_row = dbresponse.fetchone()
+        # Don't actually fill input image's data until everything is successfully retrieved
+        image_row = result[0]
+        dbid = image_row["id"]
+        encodings = self.get_encodings_by_image_id(dbid)
+        people = self.get_people_by_image_id(dbid)
 
-        encodings = self.get_encodings_by_image_id(image_row["id"])
-        people = self.get_people_by_image_id(image_row["id"])
-
+        # Apply data to input image
+        image.dbid = dbid
         image.encodings_in_image = encodings
         image.matched_people = people
         return image
@@ -227,7 +232,7 @@ class Database:
                 SELECT P.id,P.name
                 FROM ImagePerson IP
                 INNER JOIN Person P ON IP.person_id = p.id
-                WHERE IE.image_id = ?
+                WHERE IP.image_id = ?
                 """
         dbresponse = self.connection.execute(sql, [image_id])
         results = dbresponse.fetchall()
@@ -269,10 +274,11 @@ if __name__ == "__main__":
     test_person.encodings = [test_image.encodings_in_image[0]]
 
     test_db.add_image(test_image)
+    test_db.add_image(test_image)
 
     same_image_different_object = ImageFile(test_image_path)
     test_db.get_image_data_by_attributes(same_image_different_object)
     if same_image_different_object:
-        pp(same_image_different_object)
+        print("Matched! Retrieved some encodings.")
     else:
         print("No match found")
