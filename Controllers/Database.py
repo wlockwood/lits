@@ -27,10 +27,6 @@ class Database:
         self.connection = sqlite3.connect(db_file_path, detect_types=sqlite3.PARSE_COLNAMES, isolation_level=None)
         self.open_connections.append(self)
 
-    def initialize(self) -> None:
-        """
-        Prepare database for first use by creating schema
-        """
         # Create tables if they don't already exist: Image, Person, PersonInImage
         self.create_schema()
 

@@ -121,7 +121,6 @@ class TestDatabase(unittest.TestCase):
 
     def setUp(self):
         self.test_db = Database(self.test_db_path)
-        self.test_db.initialize()
 
         # Clean out the database
         self.test_db.connection.executescript("DELETE FROM Image")
