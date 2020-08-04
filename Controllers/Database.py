@@ -24,10 +24,9 @@ class Database:
 
     def __init__(self, db_file_path: str):
         self.db_file_path = db_file_path
-        self.connection = sqlite3.connect(db_file_path, detect_types=sqlite3.PARSE_COLNAMES)
+        self.connection = sqlite3.connect(db_file_path, detect_types=sqlite3.PARSE_COLNAMES, isolation_level=None)
         self.open_connections.append(self)
 
-    # TODO: Implement initialization
     def initialize(self) -> None:
         """
         Prepare database for first use by creating schema
@@ -49,6 +48,7 @@ class Database:
             c.close()
 
     def create_schema(self):
+        # TODO: Benchmark each index
         """
         Initializes an empty database.
         :return:
@@ -100,9 +100,12 @@ class Database:
         CREATE INDEX IF NOT EXISTS idx_encodings_from_image ON ImageEncoding (image_id); 
         """
         self.connection.executescript(create_tables)
-        all_tables = self.connection.execute(
-            "SELECT name FROM sqlite_master WHERE type IN ('table','view','index') AND name NOT LIKE 'sqlite_%'").fetchall()
-        pp(all_tables)
+
+        # DEBUG
+        if False:
+            all_tables = self.connection.execute(
+                "SELECT name FROM sqlite_master WHERE type IN ('table','view','index') AND name NOT LIKE 'sqlite_%'").fetchall()
+            pp(all_tables)
 
     def add_image(self, image: ImageFile) -> int:
         """
@@ -127,6 +130,10 @@ class Database:
         for enc in image.encodings_in_image:
             self.add_encoding(enc, image.dbid, image=True)
 
+        # Insert associated people
+        for person in image.matched_people:
+            self.add_person(person)
+
         self.connection.commit()
         image.in_database = True
         return image.dbid
@@ -138,13 +145,16 @@ class Database:
         :return: The new person's id
         """
         sql = """
-        INSERT INTO Person P VALUES (?)
+        INSERT INTO Person (name) VALUES (?)
         """
         dbresponse = self.connection.execute(sql, [person.name])
         dbid = dbresponse.lastrowid
+
+        for enc in person.encodings:
+            self.add_encoding(enc, associate_id=dbid, person=True)
         return dbid
 
-    def add_encoding(self, encoding: ndarray, associate_id: int, person: bool = False, image: bool = False):
+    def add_encoding(self, encoding: ndarray, associate_id: int, person: bool = False, image: bool = False) -> int:
         """
         Adds an encoding to the database. They must be associated to an existing person or image.
         :param encoding: The encoding's payload
@@ -174,7 +184,7 @@ class Database:
         # Insert
         if person:
             sql = "INSERT INTO PersonEncoding (encoding_id,person_id) VALUES (?,?)"
-        if image:
+        elif image:
             sql = "INSERT INTO ImageEncoding (encoding_id, image_id) VALUES (?,?)"
         else:
             raise ValueError("Must specify a type of encoding association.")
@@ -200,17 +210,21 @@ class Database:
         if len(result) < 1:
             return None
 
-        # Don't actually fill input image's data until everything is successfully retrieved
         image_row = result[0]
         dbid = image_row["id"]
-        encodings = self.get_encodings_by_image_id(dbid)
-        people = self.get_people_by_image_id(dbid)
 
-        # Apply data to input image
-        image.dbid = dbid
-        image.encodings_in_image = encodings
-        image.matched_people = people
+        data_from_db = self.get_image_data_by_id(dbid)
+        image.encodings_in_image, image.matched_people = data_from_db
+
         return image
+
+    def get_image_data_by_id(self, image_id: int) -> (List[ndarray], List[Person]):
+        # Don't actually fill input image's data until everything is successfully retrieved
+
+        encodings = self.get_encodings_by_image_id(image_id)
+        people = self.get_people_by_image_id(image_id)
+
+        return encodings, people
 
     def get_encodings_by_image_id(self, image_id: int) -> List[ndarray]:
         sql = """
@@ -250,35 +264,3 @@ class Database:
             output.append(image.filepath)
 
         return output
-
-
-if __name__ == "__main__":
-    print("CWD = ", os.getcwd())
-    test_db_path = "test.db"
-    test_image_path = r"..\test-image.jpg"
-    try:
-        os.remove(test_db_path)
-    except:
-        # It's fine if it fails, but it usually won't.
-        pass
-    test_db = Database(test_db_path)
-    test_db.initialize()
-
-    test_image = ImageFile(test_image_path)
-
-    from Controllers.FaceRecognizer import encode_faces
-
-    test_person = Person("Will")
-    encode_faces([test_image])
-    test_image.matched_people = [test_person]
-    test_person.encodings = [test_image.encodings_in_image[0]]
-
-    test_db.add_image(test_image)
-    test_db.add_image(test_image)
-
-    same_image_different_object = ImageFile(test_image_path)
-    test_db.get_image_data_by_attributes(same_image_different_object)
-    if same_image_different_object:
-        print("Matched! Retrieved some encodings.")
-    else:
-        print("No match found")
