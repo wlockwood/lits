@@ -40,6 +40,7 @@ def main():
     parser.add_argument("--known", help="Directory of known people's faces", required=True)
     parser.add_argument("--db", help="Path to the database file or where to create it", default="lits.db")
     parser.add_argument("--tolerance", help="Lower forces stricter matches", default=0.6, type=float)
+    # TODO: Add "--clear-keywords"?
     args = parser.parse_args()
 
     def validate_path_exists(check_path: str, name: str):
