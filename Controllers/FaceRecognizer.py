@@ -1,17 +1,19 @@
 from typing import List, Any
 from collections import namedtuple
+
+import numpy
 from numpy.core.multiarray import ndarray  # Encoded faces
 
 from Model.Person import Person
 from Model.ImageFile import ImageFile
 import face_recognition as fr
-from dlib import resize_image
+from PIL import Image as pilmage
 from os import path
 
 import unittest
 
-
-def encode_faces(images: List[ImageFile], jitter: int = 1, resize_to: int = 750) -> List[ImageFile]:
+GOAL_SIZE = 1250  # Determined by testing as a good compromise between speed and accuracy
+def encode_faces(images: List[ImageFile], jitter: int = 1, resize_to: int = 1500) -> List[ImageFile]:
     """
     Populates the encodings_in_image field of an Image
     :param images: A list of image paths to encode the faces of
@@ -23,13 +25,18 @@ def encode_faces(images: List[ImageFile], jitter: int = 1, resize_to: int = 750)
 
     encoded_faces = []
     for image in images:
-        content = fr.load_image_file(image.filepath)
-        scale_factor = resize_to / max(content.shape[0], content.shape[1])
-        new_x, new_y = int(round(content.shape[0] * scale_factor)), \
-                       int(round(content.shape[1] * scale_factor))
-        resized = resize_image(content, rows=new_y, cols=new_x)
+        content = pilmage.open(image.filepath)
 
-        image.encodings_in_image = fr.face_encodings(content, num_jitters=jitter, model="large")
+        # Resize image to around 1k pixels
+
+        scale_factor = GOAL_SIZE / max(content.size[0], content.size[1])
+        new_x, new_y = int(round(content.size[0] * scale_factor)), \
+                       int(round(content.size[1] * scale_factor))
+        resized = content.resize((new_x, new_y))
+        as_numpy_arr = numpy.array(resized)
+
+        found_encodings = fr.face_encodings(as_numpy_arr, num_jitters=jitter, model="large")
+        image.encodings_in_image = found_encodings
     return images
 
 
