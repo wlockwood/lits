@@ -12,7 +12,7 @@ class Person:
         self.name = name
 
         # Other fields
-        self.encodings: List[FaceEncoding] = []
+        self.encodings: List[FaceEncoding] = encodings
 
     def __str__(self):
         return self.name

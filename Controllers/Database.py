@@ -256,7 +256,7 @@ class Database:
 
         output = []
         for p_row in results:
-            person_id = p_row["person_id"]
+            person_id = p_row["id"]
             found_encodings = self.get_encodings_by_person_id(person_id)
             output.append(Person(person_id, p_row["name"], found_encodings))
 
@@ -264,7 +264,7 @@ class Database:
 
     def get_person_by_name(self, name: str) -> Optional[Person]:
         sql = "SELECT * FROM Person WHERE name = ?"
-        dbresponse = self.connection.execute(sql)
+        dbresponse = self.connection.execute(sql, [name])
         results = dbresponse.fetchall()
 
         if len(results) < 1:

@@ -49,9 +49,13 @@ def main():
     # TODO: Add "--rescan"? Would ignore encodings cached in database
     args = parser.parse_args()
 
-    validate_path_exists(args.scanroot, "scanroot")
-    validate_path_exists(args.known, "known")
-    validate_path_exists(args.db, "db")
+    assert path.exists(args.scanroot), f"'scanroot' path doesn't exist: {path.abspath(args.scanroot)}"
+    assert path.exists(args.known), f"'known' path doesn't exist: {path.abspath(args.known)}"
+    if path.exists(args.db):
+        print(f"Found pre-existing database at {path.abspath(args.db)}")
+    else:
+        print(f"Will create new database at {path.abspath(args.db)}")
+
 
     # Initialize database
     db = Database(args.db)
@@ -83,7 +87,7 @@ def main():
 
         # Ensure this image's encoding is associated to the person named in its filename
         person_name: str = just_filename(kpi.filepath)
-        found_person: Optional[Person] = db.get_person_by_name(person_name)
+        found_person = db.get_person_by_name(person_name)
 
         if not found_person:  # If person doesn't exist, create them and associate their first face encoding
             person_id = db.add_person(person_name)
