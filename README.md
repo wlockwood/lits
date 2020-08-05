@@ -5,10 +5,13 @@ LITS generates encoded versions of known people and will scan all pictures found
 
 Initially, LITS will only _tag_ images to enable search elsewhere, but future versions will supply a facility for querying the internal database.
 
-**JPEG** is the only fully supported file type as other types either lack appropriate metadata fields or have different fields.  
-**Semi-supported** supported file formats: .png, .bmp, .gif and other simple raster image formats should work, but their lack of JPEG-like metadata fields limits the utility of doing so.  
-**Untested** but potentially functional formats: [everything Pillow can read](https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html).  
-**Unsupported** file formats: DNG and other raw files.
+**JPEG** is the only fully supported file type as other types either lack appropriate metadata fields or have different fields.
+
+**Untested** but probably functional file formats: .png, .bmp, .gif and other simple raster image formats should work, but their lack of JPEG-like metadata fields limits the utility of doing so. Future versions may support more metadata types than IPTC. By default, LITS will filter these out, but the user can modify the `valid_extensions` variable in `lits.py` if they want to test out a specific file type.  
+
+**Untested** and unlikely-to-be functional formats: [everything Pillow can read](https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html).  By default, LITS will filter these out, but the user can modify the `valid_extensions` variable in `lits.py` if they want to test out a specific file type.  
+
+**Unsupported** file formats: DNG and other raw files. Anything that's not a picture.
 
 # Usage
 After installation, run LITS from a command line in the following fashion:  
@@ -62,4 +65,4 @@ Development environment is Windows, so installation assumes that. Installing in 
         ```
 1. Install face_recognition: `pip install face_recognition`.
 1. Install pyexiv2: `pip install pyexiv2`
-
+1. Download SQLite tools if you want to run queries against the database that is built. This may be integrated in future versions.

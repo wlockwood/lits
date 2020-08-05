@@ -45,7 +45,7 @@ Module breakdown moved to Modules.md
 * ImageObjects: Encodings of objects? Maybe just image-object associations. Maybe should just be on the image table?
 
 # Optimization
-* Either multiprocess per-picture, or look at the batching approach in f_r
+* Multiprocess per-picture. Starmap?
 * Take in a list of analyses to perform rather than assuming f_r is it.
 * Multi-process access to sqlite may run into concurrency issues
 * Test whether images need to be rotated prior to being run through f_r
@@ -60,10 +60,14 @@ https://github.com/davidsandberg/facenet* Old but very similar.
 
 What if we identify and rotate faces, *then* crop/resize as necessary just the face?
 
+Need to determine licensing
+
 # Visualizations
 Part of WGU's capstone requirements. 
 
 Create a separate script to extract data from the database and create charts. 
+
+Example of matplotlib and PyQt 5: https://gist.github.com/holesond/b4f9db4b24eca00ef8b01a96c6e53a03
 
 Plotly or Matplotlib. Others?
 
@@ -74,6 +78,8 @@ Visualization ideas:
 * Person / emotive content
 * Percent of image that is occupied by face
 * Emotive content over time based on image capture time
+* exposure details over time
+* time of day picture is taken
  
  
  
