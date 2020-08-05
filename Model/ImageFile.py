@@ -76,7 +76,6 @@ class ImageFile:
         if not self.md_init_complete or force_refresh:
             self.init_metadata()
 
-
         field_data = self.iptc.get("Iptc.Application2.Keywords", "")
         return field_data.split(",") if len(field_data) > 0 else []
 
