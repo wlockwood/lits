@@ -4,9 +4,13 @@ from os.path import isfile, join
 from pprint import pprint as pp
 from collections import namedtuple
 from time import perf_counter as pc
-from dlib import resize_image
+
+import numpy
+from PIL import Image as pilmage
 
 print("CWD = ", getcwd())
+TOLERANCE = 0.6  # Lower tolerance requires a closer match
+goal_size = 1250  # For resizing images
 
 # Import and time
 t0 = pc()
@@ -44,25 +48,27 @@ expected_counts = []
 found_counts = []
 false_positive_counts = []
 false_negative_counts = []
-image_success_percent = []  # List of images and the percent of expected faces found
 
 # Iterate through list of unknowns
 ComparedFace = namedtuple("ComparedFace", "Person Distance")
 ComparedFace.__str__ = lambda self: f"{self.Person.Name} ({self.Distance:.3f})"
 
 for file in files:
-    print(f" - {file} - ")
-    content = fr.load_image_file(file)
+    cper = len(found_counts) * 100.0 / len(files)  # Completion percentage
+    print(f"{cper:2.0f}% - {file} - ")
+    content = pilmage.open(file)
 
     # Resize image to around 1k pixels
-    scale_factor = 750 / max(content.shape[0], content.shape[1])
-    new_x, new_y = int(round(content.shape[0] * scale_factor)), \
-                   int(round(content.shape[1] * scale_factor))
-    resized = resize_image(content, rows=new_y, cols=new_x)
+
+    scale_factor = goal_size / max(content.size[0], content.size[1])
+    new_x, new_y = int(round(content.size[0] * scale_factor)), \
+                   int(round(content.size[1] * scale_factor))
+    resized = content.resize((new_x, new_y))
+    as_numpy_arr = numpy.array(resized)
 
     # Recognize faces using face_recognition
     t0 = pc()
-    faces_in_image = fr.face_encodings(resized)
+    faces_in_image = fr.face_encodings(as_numpy_arr)
     encoding_generation_times.append(pc() - t0)
     print(f"\tFound {len(faces_in_image)} faces")
 
@@ -82,23 +88,23 @@ for file in files:
         possible_matches = [ComparedFace(KnownPeople[i], compare_results[i]) for i in range(len(compare_results))]
 
         # Remove faces that too unlike the face we're checking.
-        TOLERANCE = 0.6  # Lower tolerance requires a closer match
         possible_matches: List[ComparedFace] = [x for x in possible_matches if x.Distance < TOLERANCE]
-        print(f"\tBy tolerance, {len(possible_matches)} likely matches: ", ', '.join([str(x) for x in possible_matches]))
+        #print(f"\tBy tolerance, {len(possible_matches)} likely matches: ", ', '.join([str(x) for x in possible_matches]))
 
         # Removing already-found people
         possible_matches  = [x for x in possible_matches if x.Person not in found_people]
-        print(f"\tBy newness, {len(possible_matches)} likely matches: ", ', '.join([str(x) for x in possible_matches]))
+        #print(f"\tBy newness, {len(possible_matches)} likely matches: ", ', '.join([str(x) for x in possible_matches]))
 
         # Sort by chance of facial distance ascending
         possible_matches = sorted(possible_matches, key=lambda x: x.Distance)
-        print(f"\tAfter sorting, {len(possible_matches)} likely matches: ", ', '.join([str(x) for x in possible_matches]))
+        #print(f"\tAfter sorting, {len(possible_matches)} likely matches: ", ', '.join([str(x) for x in possible_matches]))
 
         if len(possible_matches) > 0:
             best_match = possible_matches[0].Person
             print(f"\tBest match: {str(possible_matches[0])}")
             found_people.append([x for x in KnownPeople if x.Name == best_match[0]][0])
             # print(f"Likely matches: ", [x.Name for x in likely_matches])
+
 
     # Compare actual and expected results
     false_positives = [x for x in found_people if x not in expected_people]
@@ -117,13 +123,17 @@ for file in files:
         print("No people found or expected.")
 print()
 print(" ==== Face recognition complete! ====")
+print(f" - Settings: Tolerance = {TOLERANCE}   resize_to = {goal_size}")
 print(" - Statistics - ")
 print(f"Encoding generation: {sum(encoding_generation_times):,.1f}s, avg {sum(encoding_generation_times) / len(encoding_generation_times):.2}s, max {max(encoding_generation_times):.2}")
 print(f"       Face compare: {sum(face_compare_times)*1000:.3f}ms, avg {sum(face_compare_times) / len(face_compare_times) * 1000:.3f}ms, max {max(face_compare_times) * 1000:.3f}ms")
 print(f"     Expected faces: {sum(expected_counts)}, avg {sum(expected_counts) / max(len(expected_counts), 1):.2}, max {max(expected_counts)}")
 print(f"        Found faces: {sum(found_counts)}, avg {sum(found_counts) / max(len(found_counts), 1):.2}, max {max(found_counts)}")
-success_percents = [found_counts[i] / expected_counts[i] for i in range(len(files)) if expected_counts[i] > 0]
-print(f"          Success %: avg {sum(success_percents) / len(success_percents) * 100:.1f}%")
+
+success_percents = [(100 if expected_counts[i] == 0 and found_counts[i] == 0 else
+                     ((found_counts[i]-(false_negative_counts[i]-false_positive_counts[i])/2) * 100.0 / expected_counts[i]))
+                    for i in range(len(files)) if expected_counts[i] > 0]
+print(f"          Success %: avg {sum(success_percents) / len(success_percents):.1f}%")
 if len(false_positive_counts) > 0:
     print(f"    False positives: {sum(false_positive_counts)}, avg {sum(false_positive_counts) / len(false_positive_counts):.2}, max {max(false_positive_counts)}")
 else:
