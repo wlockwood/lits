@@ -13,31 +13,31 @@ from os import path
 import unittest
 
 GOAL_SIZE = 1250  # Determined by testing as a good compromise between speed and accuracy
-def encode_faces(images: List[ImageFile], jitter: int = 1, resize_to: int = 1500) -> List[ImageFile]:
+
+
+def encode_faces(filepath: str, jitter: int = 1, resize_to: int = 1500) -> List[ndarray]:
     """
     Populates the encodings_in_image field of an Image
-    :param images: A list of image paths to encode the faces of
+
+    :param image: An ImageFile with zero or more faces in it.
     :param jitter: How many times to transform a face. Higher number is slower but more accurate.
     :param resize_to: Size to resize to. Lower number is faster but less accurate.
     :return: The input list of images.
     """
     # TODO: EXIF rotate images prior to encoding them
 
-    encoded_faces = []
-    for image in images:
-        content = pilmage.open(image.filepath)
+    content = pilmage.open(filepath)
 
-        # Resize image to around 1k pixels
+    # Resize image to around 1k pixels
 
-        scale_factor = GOAL_SIZE / max(content.size[0], content.size[1])
-        new_x, new_y = int(round(content.size[0] * scale_factor)), \
-                       int(round(content.size[1] * scale_factor))
-        resized = content.resize((new_x, new_y))
-        as_numpy_arr = numpy.array(resized)
+    scale_factor = GOAL_SIZE / max(content.size[0], content.size[1])
+    new_x, new_y = int(round(content.size[0] * scale_factor)), \
+                   int(round(content.size[1] * scale_factor))
+    resized = content.resize((new_x, new_y))
+    as_numpy_arr = numpy.array(resized)
 
-        found_encodings = fr.face_encodings(as_numpy_arr, num_jitters=jitter, model="large")
-        image.encodings_in_image = found_encodings
-    return images
+    found_encodings = fr.face_encodings(as_numpy_arr, num_jitters=jitter, model="large")
+    return found_encodings
 
 
 # Named tuple to make matching code easier to read

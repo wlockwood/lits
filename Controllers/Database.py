@@ -6,11 +6,13 @@ from typing import List, Optional
 import numpy
 from numpy.core.multiarray import ndarray
 
-from Model.ImageFile import ImageFile
+
 from pprint import pprint as pp
 import os
 
+from Model.ImageFile import ImageFile
 from Model.Person import Person
+from Model.FaceEncoding import FaceEncoding
 
 
 class Database:
@@ -58,15 +60,6 @@ class Database:
         CREATE TABLE IF NOT EXISTS Person   --A single individual person per row
             (id INTEGER PRIMARY KEY, name TEXT);
 
-        CREATE TABLE IF NOT EXISTS ImagePerson  --A relationship between an image and a person
-            (id INTEGER PRIMARY KEY, 
-            image_id INT,
-            person_id INT,
-            FOREIGN KEY (image_id) REFERENCES Image (id), 
-            FOREIGN KEY (person_id) REFERENCES Person (id)
-            );
-         
-
         CREATE TABLE IF NOT EXISTS Encoding --Encoded version of a face found in an image
             (id INTEGER PRIMARY KEY, 
             encoding BLOB);
@@ -76,7 +69,8 @@ class Database:
             image_id INT,
             encoding_id TEXT,
             FOREIGN KEY (image_id) REFERENCES Image (id),
-            FOREIGN KEY (encoding_id) REFERENCES Encoding (id)
+            FOREIGN KEY (encoding_id) REFERENCES Encoding (id),
+            UNIQUE(image_id,encoding_id)
             );
                         
         CREATE TABLE IF NOT EXISTS PersonEncoding    --A relationship between an person and an encoding
@@ -84,15 +78,13 @@ class Database:
             person_id INT,
             encoding_id INT,
             FOREIGN KEY (person_id) REFERENCES Person (id),
-            FOREIGN KEY (encoding_id) REFERENCES Encoding (id)
+            FOREIGN KEY (encoding_id) REFERENCES Encoding (id),
+            UNIQUE(person_id,encoding_id)
             );
         
         --Going to happen a lot in bulks
         CREATE INDEX IF NOT EXISTS idx_image_in_db ON Image (filename, date_modified, size_bytes); 
                 
-        --The intended use case for this entire application
-        CREATE INDEX IF NOT EXISTS idx_person_in_images ON ImagePerson (person_id);
-        
         CREATE INDEX IF NOT EXISTS idx_encodings_from_image ON ImageEncoding (image_id); 
         """
         self.connection.executescript(create_tables)
@@ -103,16 +95,16 @@ class Database:
                 "SELECT name FROM sqlite_master WHERE type IN ('table','view','index') AND name NOT LIKE 'sqlite_%'").fetchall()
             pp(all_tables)
 
-    def add_image(self, image: ImageFile) -> int:
+    def add_image(self, image: ImageFile, encodings: List[ndarray]) -> int:
         """
         Adds one image entry to the database.
         :param image: ImageFile to add
         :return: Id of the created image record
         """
         # Check for existence
-        exist_check = self.get_image_data_by_attributes(image)
+        exist_check = self.get_image_id_by_attributes(image)
         if exist_check:
-            return exist_check.dbid
+            return exist_check
 
         # Insert images
         insert_image = """
@@ -123,31 +115,25 @@ class Database:
         # print(f"Inserted {image} as row {dbresponse.lastrowid}")
 
         # Insert associated encodings
-        for enc in image.encodings_in_image:
+        for enc in encodings:
             self.add_encoding(enc, image.dbid, image=True)
-
-        # Insert associated people
-        for person in image.matched_people:
-            self.add_person(person)
 
         self.connection.commit()
         image.in_database = True
         return image.dbid
 
-    def add_person(self, person: Person) -> int:
+    def add_person(self, name) -> int:
         """
         Adds a person to the database.
         :param person: A person object.
         :return: The new person's id
         """
+
         sql = """
         INSERT INTO Person (name) VALUES (?)
         """
-        dbresponse = self.connection.execute(sql, [person.name])
+        dbresponse = self.connection.execute(sql, [name])
         dbid = dbresponse.lastrowid
-
-        for enc in person.encodings:
-            self.add_encoding(enc, associate_id=dbid, person=True)
         return dbid
 
     def add_encoding(self, encoding: ndarray, associate_id: int, person: bool = False, image: bool = False) -> int:
@@ -179,7 +165,7 @@ class Database:
         """
         # Insert
         if person:
-            sql = "INSERT INTO PersonEncoding (encoding_id,person_id) VALUES (?,?)"
+            sql = "INSERT INTO PersonEncoding (encoding_id, person_id) VALUES (?,?)"
         elif image:
             sql = "INSERT INTO ImageEncoding (encoding_id, image_id) VALUES (?,?)"
         else:
@@ -188,10 +174,9 @@ class Database:
         dbid = dbresponse.lastrowid
         return dbid
 
-    def get_image_data_by_attributes(self, image: ImageFile) -> Optional[ImageFile]:
+    def get_image_id_by_attributes(self, image: ImageFile) -> int:
         """
         Searches the database for an image with a given filename/date-modified/filesize combination.
-        If found, it populates the encodings and people found in the image.
         :param image: The image to check the database for
         :return: Whether the image was found or not
         """
@@ -208,11 +193,8 @@ class Database:
 
         image_row = result[0]
         dbid = image_row["id"]
-        image.dbid = dbid
-        data_from_db = self.get_image_data_by_id(dbid)
-        image.encodings_in_image, image.matched_people = data_from_db
 
-        return image
+        return dbid
 
     def get_image_data_by_id(self, image_id: int) -> (List[ndarray], List[Person]):
         # Don't actually fill input image's data until everything is successfully retrieved
@@ -222,9 +204,9 @@ class Database:
 
         return encodings, people
 
-    def get_encodings_by_image_id(self, image_id: int) -> List[ndarray]:
+    def get_encodings_by_image_id(self, image_id: int) -> List[FaceEncoding]:
         sql = """
-        SELECT E.encoding
+        SELECT E.id, E.encoding
         FROM ImageEncoding IE
         INNER JOIN Encoding E ON IE.encoding_id = E.id
         WHERE IE.image_id = ?
@@ -233,20 +215,72 @@ class Database:
         encoding_rows = dbresponse.fetchall()
         output = []
         for row in encoding_rows:
-            output.append(numpy.frombuffer(row["encoding"], dtype="float64"))
+            encoding = numpy.frombuffer(row["encoding"], dtype="float64")
+            output.append(FaceEncoding(row["id"], encoding))
+        return output
+
+    def get_encodings_by_person_id(self, person_id: int) -> List[FaceEncoding]:
+        sql = """
+            SELECT E.id, E.encoding
+            FROM PersonEncoding PE
+            INNER JOIN Encoding E ON PE.encoding_id = E.id
+            WHERE PE.person_id = ?
+        """
+        dbresponse = self.connection.execute(sql, [person_id])
+        encoding_rows = dbresponse.fetchall()
+        output = []
+
+        # TODO: Code duplication, add adapter/converter
+        for row in encoding_rows:
+            encoding = numpy.frombuffer(row["encoding"], dtype="float64")
+            output.append(FaceEncoding(row["id"], encoding))
+        return output
+
+    def get_images_by_person_id(self, person_id: int) -> List[str]:
+        sql = """
+            SELECT
+                I.path
+            FROM PersonEncoding PE
+            INNER JOIN ImageEncoding IE ON PE.encoding_id = IE.encoding_id
+            INNER JOIN Image I ON IE.image_id = I.id
+            WHERE PE.person_id = ?
+        """
+        dbresponse = self.connection.execute(sql, [person_id])
+        results = dbresponse.fetchall()
+        return [row["path"] for row in results]
+
+    def get_all_people(self):
+        sql = "SELECT * from Person"
+        dbresponse = self.connection.execute(sql)
+        results = dbresponse.fetchall()
+
+        output = []
+        for p_row in results:
+            person_id = p_row["person_id"]
+            found_encodings = self.get_encodings_by_person_id(person_id)
+            output.append(Person(person_id, p_row["name"], found_encodings))
 
         return output
 
-    def get_people_by_image_id(self, image_id: int) -> List[Person]:
-        sql = """
-                SELECT P.id,P.name
-                FROM ImagePerson IP
-                INNER JOIN Person P ON IP.person_id = p.id
-                WHERE IP.image_id = ?
-                """
-        dbresponse = self.connection.execute(sql, [image_id])
+    def get_person_by_name(self, name: str) -> Optional[Person]:
+        sql = "SELECT * FROM Person WHERE name = ?"
+        dbresponse = self.connection.execute(sql)
         results = dbresponse.fetchall()
-        return [Person(row["name"]) for row in results]
+
+        if len(results) < 1:
+            return None
+        if len(results) > 1:
+            raise Exception(f"Multiple people found with name {name}")
+        row = results[0]
+        person_id = row["id"]
+        encodings = self.get_encodings_by_person_id(person_id)
+
+        return Person(person_id, row["name"], encodings)
+
+
+
+
+
 
     # Pseudo-adapters - Don't always want every parameter, so not using the real "adapters" functionality
     @classmethod

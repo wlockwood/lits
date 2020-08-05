@@ -18,12 +18,15 @@ GitHub: wlockwood/lits
 # Builtins
 import argparse
 from os import path, getcwd, listdir
-from typing import List
+from typing import List, Optional
 from time import perf_counter as pc
 from datetime import datetime
 # External modules
 
 # Custom modules
+from numpy.core.multiarray import ndarray
+
+from Model.FaceEncoding import FaceEncoding
 from Model.Person import Person
 from Model.ImageFile import ImageFile
 from Controllers.Database import Database
@@ -55,24 +58,56 @@ def main():
 
     # Initialize list of known people
     # TODO: Add support for people folders instead of just single pictures
-    # TODO: Filter for supported file types.
+
+
     known_person_images = get_all_compatible_files(args.known)
-    print(f"{len(known_person_images):,} images of known people")
+    print(f"{len(known_person_images):,} images of known people in {args.known}")
 
-    get_or_compute_encodings(db, known_person_images, jitter=3)
-    known_people: List[Person] = []
-    for im in known_person_images:
-        name, extension = path.splitext(im.filepath)
-        new_person = Person(name)
-        new_person.encodings = im.encodings_in_image
-        known_people.append(new_person)
+    for kpi in known_person_images:
+        # Ensure image is already in database
+        image_id = db.get_image_id_by_attributes(kpi)
+        if image_id:
+            encodings: List[FaceEncoding] = db.get_encodings_by_image_id(image_id)
+            print(f"File {kpi.filepath} already in database (image_id: {image_id}) with {len(encodings)} faces(s).")
+        else: # Encode and save
+            new_encodings: List[ndarray] = encode_faces(kpi.filepath)
+            image_id = db.add_image(kpi, new_encodings)
+            print(f"File {kpi.filepath} added to database (image_id: {image_id}) with {len(new_encodings)} face(s).")
 
+        # Make sure it's a picture of just one person
+        encodings_in_image = db.get_encodings_by_image_id(image_id)
+        if len(encodings_in_image) != 1:
+            raise Exception(f"Image {kpi.filepath} can't be a known person image as no faces or multiple were found.")
+
+        kpi_encoding: FaceEncoding = db.get_encodings_by_image_id(image_id)[0]
+
+        # Ensure this image's encoding is associated to the person named in its filename
+        person_name: str = just_filename(kpi.filepath)
+        found_person: Optional[Person] = db.get_person_by_name(person_name)
+
+        if not found_person:  # If person doesn't exist, create them and associate their first face encoding
+            person_id = db.add_person(person_name)
+            encoding_id = db.associate_encoding(kpi_encoding.dbid, associate_id=person_id, person=True)
+        else:  # Person already exists, associate this encoding if it's not already so
+            matching_encodings = [enc for enc in found_person.encodings if enc.equals(kpi_encoding)]
+
+            if len(matching_encodings) > 0:
+                print(f"File {kpi.filepath} already in database for person '{person_name}'.")
+
+            if len(matching_encodings) == 0:  # No match, so associate this encoding to person
+                db.associate_encoding(kpi_encoding.dbid, associate_id=found_person.dbid, person=True)
+                print(
+                    f"File {kpi.filepath} already in database, but wasn't associated with person '{person_name}'.")
+
+    # Database now up to date, extract all known people
+    known_people = db.get_all_people()
+    print(f"{len(known_people):,} known people found in database.")
 
     # Build list of files to scan
     images_to_scan = get_all_compatible_files(args.scanroot)
     print(f"{len(images_to_scan):,} images in scanroot")
 
-    # Remove images that are in the known folder
+    # Remove images that are in the known folder, if any
     images_to_scan = [im for im in images_to_scan if path.abspath(im.filepath)
                       not in [path.abspath(kpi.filepath) for kpi in known_person_images]]
     print(f"{len(images_to_scan):,} images to scan after removing known-person images")
@@ -137,10 +172,8 @@ def get_all_compatible_files(folderpath: str):
     as_images = [ImageFile(f) for f in all_files]
     return as_images
 
-
-def check_images_against_database(database: Database, images: List[ImageFile]):
-    for image in images:
-        database.get_image_data_by_attributes(image)
+def just_filename(in_path: str):
+    return path.splitext(path.basename(in_path))[0]
 
 def get_or_compute_encodings(database: Database, images: List[ImageFile], jitter = None) -> None:
     """
