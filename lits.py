@@ -69,14 +69,7 @@ def main():
 
     for kpi in known_person_images:
         # Ensure image is already in database
-        image_id = db.get_image_id_by_attributes(kpi)
-        if image_id:
-            encodings: List[FaceEncoding] = db.get_encodings_by_image_id(image_id)
-            print(f"File {kpi.filepath} already in database (image_id: {image_id}) with {len(encodings)} faces(s).")
-        else: # Encode and save
-            new_encodings: List[ndarray] = encode_faces(kpi.filepath)
-            image_id = db.add_image(kpi, new_encodings)
-            print(f"File {kpi.filepath} added to database (image_id: {image_id}) with {len(new_encodings)} face(s).")
+        image_id = ensure_image_in_database(db, kpi)
 
         # Make sure it's a picture of just one person
         encodings_in_image = db.get_encodings_by_image_id(image_id)
@@ -125,10 +118,11 @@ def main():
     # Encode faces in files to scan (expensive!)
     print(f"{len(images_to_scan):,} unscanned images")
     print(f"Starting scan at {datetime.now()}")
+
     for image in images_to_scan:  # Iterating individually for now to make progress reporting easier
         image_start_time = pc()
         # TODO: Parallelize here on a per-image basis
-        get_or_compute_encodings(db, [image])
+        ensure_image_in_database(db, image)
 
         # Match people
         if len(image.encodings_in_image) > 0:
@@ -136,9 +130,6 @@ def main():
             image.matched_people = found_people
             if len(image.matched_people) > 0:
                 image.append_keywords([mp.name for mp in image.matched_people])
-
-        # Save to database
-        # TODO: Write to database
 
         # Stats and UI updates
         scan_count += 1
@@ -160,6 +151,17 @@ def main():
     """
 
 
+def ensure_image_in_database(db: Database, image: ImageFile):
+    image_id = db.get_image_id_by_attributes(image)
+    if image_id:
+        encodings: List[FaceEncoding] = db.get_encodings_by_image_id(image_id)
+        print(f"File {image.filepath} already in database (image_id: {image_id}) with {len(encodings)} faces(s).")
+    else:  # Encode and save
+        new_encodings: List[ndarray] = encode_faces(image.filepath)
+        image_id = db.add_image(image, new_encodings)
+        print(f"File {image.filepath} added to database (image_id: {image_id}) with {len(new_encodings)} face(s).")
+    return image_id
+
 def validate_path_exists(check_path: str, name: str):
     if path.exists(check_path):
         print(f"'{name}' will be '{path.abspath(check_path)}'.")
@@ -178,26 +180,6 @@ def get_all_compatible_files(folderpath: str):
 
 def just_filename(in_path: str):
     return path.splitext(path.basename(in_path))[0]
-
-def get_or_compute_encodings(database: Database, images: List[ImageFile], jitter = None) -> None:
-    """
-    Check database and populate any existing encodings. Run face_recognition's encoder (expensive!) otherwise.
-    ImageFiles will be updated in place.
-    :param database:
-    :param images:
-    """
-    for image in images:
-        db_check = database.get_image_data_by_attributes(image)
-        if db_check is None:
-
-            if jitter:
-                encode_faces([image], jitter)
-            else:
-                encode_faces([image])
-            database.add_image(image)
-            print(f"Encoded {image.filepath} and added to database with image id {image.dbid}")
-        else:
-            print(f"Found {image.filepath} in database with image id {image.dbid}")
 
 def soft_exit(message: str = ""):
     if message:
