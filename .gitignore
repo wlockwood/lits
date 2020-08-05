@@ -1,9 +1,9 @@
-cudaenv
-env
+cudaenv/
+env/
 face_recognition_repo
 *.jpg
 *.png
 .idea
 *.db
 !test-image.jpg
-/sqlite-tools/
+sqlite3.exe
