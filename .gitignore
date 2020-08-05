@@ -6,3 +6,4 @@ face_recognition_repo
 .idea
 *.db
 !test-image.jpg
+/sqlite-tools/
