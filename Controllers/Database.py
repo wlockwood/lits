@@ -120,7 +120,7 @@ class Database:
         """
         dbresponse = self.connection.execute(insert_image, self.adapt_ImageFile(image))
         image.dbid = dbresponse.lastrowid
-        print(f"Inserted {image} as row {dbresponse.lastrowid}")
+        # print(f"Inserted {image} as row {dbresponse.lastrowid}")
 
         # Insert associated encodings
         for enc in image.encodings_in_image:
@@ -208,7 +208,7 @@ class Database:
 
         image_row = result[0]
         dbid = image_row["id"]
-
+        image.dbid = dbid
         data_from_db = self.get_image_data_by_id(dbid)
         image.encodings_in_image, image.matched_people = data_from_db
 
