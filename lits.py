@@ -58,8 +58,8 @@ def main():
     # TODO: Filter for supported file types.
     known_person_images = get_all_compatible_files(args.known)
     print(f"{len(known_person_images):,} images of known people")
-    encode_faces(known_person_images, jitter=3)
 
+    get_or_compute_encodings(db, known_person_images, jitter=3)
     known_people: List[Person] = []
     for im in known_person_images:
         name, extension = path.splitext(im.filepath)
@@ -88,8 +88,8 @@ def main():
     print(f"Starting scan at {datetime.now()}")
     for image in images_to_scan:  # Iterating individually for now to make progress reporting easier
         image_start_time = pc()
-        # TODO: Parallelize here on a per-image basis and/or add support for GPU encoding
-        encode_faces([image])
+        # TODO: Parallelize here on a per-image basis
+        get_or_compute_encodings(db, [image])
 
         # Match people
         if len(image.encodings_in_image) > 0:
@@ -142,6 +142,25 @@ def check_images_against_database(database: Database, images: List[ImageFile]):
     for image in images:
         database.get_image_data_by_attributes(image)
 
+def get_or_compute_encodings(database: Database, images: List[ImageFile], jitter = None) -> None:
+    """
+    Check database and populate any existing encodings. Run face_recognition's encoder (expensive!) otherwise.
+    ImageFiles will be updated in place.
+    :param database:
+    :param images:
+    """
+    for image in images:
+        db_check = database.get_image_data_by_attributes(image)
+        if db_check is None:
+
+            if jitter:
+                encode_faces([image], jitter)
+            else:
+                encode_faces([image])
+            database.add_image(image)
+            print(f"Encoded {image.filepath} and added to database with image id {image.dbid}")
+        else:
+            print(f"Found {image.filepath} in database with image id {image.dbid}")
 
 def soft_exit(message: str = ""):
     if message:
@@ -153,4 +172,4 @@ def soft_exit(message: str = ""):
 
 if __name__ == "__main__":
     main()
-    soft_exit("Done!")
+    soft_exit("LITS Done!")
