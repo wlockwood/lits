@@ -5,8 +5,6 @@ Concept: Locally-run NN tagging for images. To eventually include faces, emotion
 Facial recognition for running in bulk across many images on your local machine.
 An interface for putting names to face groups (many face versions that are all the same person)
 
-!! Even if I don't use an SVM, I can get better matches by allowing each person to have N known pictures for almost no additional cost. This would let me supply a picture with a hat, or sunglasses, and still get good matches. !!
-
 # Development Steps
 * Read image tags
 * Write image tags

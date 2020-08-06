@@ -7,9 +7,9 @@ Initially, LITS will only _tag_ images to enable search elsewhere, but future ve
 
 **JPEG** is the only fully supported file type as other types either lack appropriate metadata fields or have different fields.
 
-**Untested** but probably functional file formats: .png, .bmp, .gif and other simple raster image formats should work, but their lack of JPEG-like metadata fields limits the utility of doing so. Future versions may support more metadata types than IPTC. By default, LITS will filter these out, but the user can modify the `valid_extensions` variable in `lits.py` if they want to test out a specific file type.  
+**Untested**... but probably functional file formats: .png, .bmp, .gif and other simple raster image formats should work, but their lack of JPEG-like metadata fields limits the utility of doing so. Future versions may support more metadata types than IPTC. By default, LITS will filter these out, but the user can modify the `valid_extensions` variable in `lits.py` if they want to test out a specific file type.  
 
-**Untested** and unlikely-to-be functional formats: [everything Pillow can read](https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html).  By default, LITS will filter these out, but the user can modify the `valid_extensions` variable in `lits.py` if they want to test out a specific file type.  
+**Untested**... and unlikely-to-be functional formats: [everything Pillow can read](https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html).  By default, LITS will filter these out, but the user can modify the `valid_extensions` variable in `lits.py` if they want to test out a specific file type.  
 
 **Unsupported** file formats: DNG and other raw files. Anything that's not a picture.
 

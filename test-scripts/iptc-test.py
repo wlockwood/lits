@@ -16,4 +16,3 @@ with open(image.filepath, 'rb+') as file:
     with pe2.ImageData(file.read()) as imdat:
         data = imdat.read_iptc(encoding=ImageFile.normal_encoding)
 pp(data)
-

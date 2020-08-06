@@ -19,7 +19,7 @@ class TestFaceRecognizer(unittest.TestCase):
     test_data_path = "test-data\\"
 
     known_images = [ImageFile(test_data_path + "known\\will.jpg", skip_md_init=True)]
-    test_faces = encode_faces(known_images)
+    test_faces = encode_faces(known_images.filepath)
     test_person = Person("will")
     test_person.encodings = test_faces[0].encodings_in_image
 
@@ -31,7 +31,7 @@ class TestFaceRecognizer(unittest.TestCase):
 
     # Should match when same person
     def test_one_to_one_match(self):
-        unknown_images = encode_faces([self.will_as_unknown])
+        unknown_images = encode_faces(self.will_as_unknown.filepath)
         best_matches = match_best([self.test_person], unknown_images[0].encodings_in_image)
         self.assertEqual(len(best_matches), 1, "face didn't match itself in another picture")
 
@@ -44,29 +44,29 @@ class TestFaceRecognizer(unittest.TestCase):
         test_person = Person("will")
         test_person.encodings = [enc for im in known_images for enc in im.encodings_in_image]  # Flat?
 
-        unknown_images = encode_faces([self.will_as_unknown])
+        unknown_images = encode_faces(self.will_as_unknown.filepath)
         best_matches = match_best([test_person], unknown_images[0].encodings_in_image)
         self.assertEqual(1, len(best_matches), "couldn't match a face using multiple images for known person")
 
-        unknown_images = encode_faces([self.sam_will_trail])
+        unknown_images = encode_faces(self.sam_will_trail.filepath)
         best_matches = match_best([test_person], unknown_images[0].encodings_in_image)
         self.assertEqual(1, len(best_matches), "couldn't match a face using multiple images for known person")
 
     # Should work with multiple matches in picture
     def test_multiple_unknown_in_picture(self):
-        unknown_images = encode_faces([self.multiple_people])
+        unknown_images = encode_faces(self.multiple_people.filepath)
         best_matches = match_best([self.test_person], unknown_images[0].encodings_in_image)
         self.assertEqual(1, len(best_matches), "face didn't match with itself in a picture with other people as well")
 
     # Shouldn't match on different person
     def test_no_match(self):
-        unknown_images = encode_faces([self.different_person])
+        unknown_images = encode_faces(self.different_person.filepath)
         best_matches = match_best([self.test_person], unknown_images[0].encodings_in_image)
         self.assertEqual(0, len(best_matches), "face matched against a different face")
 
     # Shouldn't match on a mushroom
     def test_not_a_person(self):
-        unknown_images = encode_faces([self.mushroom])
+        unknown_images = encode_faces(self.mushroom.filepath)
         faces_found = len(unknown_images[0].encodings_in_image)
         self.assertEqual(0, faces_found, "found a face match when looking at a mushroom")
 

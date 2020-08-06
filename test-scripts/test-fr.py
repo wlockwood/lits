@@ -89,15 +89,15 @@ for file in files:
 
         # Remove faces that too unlike the face we're checking.
         possible_matches: List[ComparedFace] = [x for x in possible_matches if x.Distance < TOLERANCE]
-        #print(f"\tBy tolerance, {len(possible_matches)} likely matches: ", ', '.join([str(x) for x in possible_matches]))
+        print(f"\tBy tolerance, {len(possible_matches)} likely matches: ", ', '.join([str(x) for x in possible_matches]))
 
         # Removing already-found people
         possible_matches  = [x for x in possible_matches if x.Person not in found_people]
-        #print(f"\tBy newness, {len(possible_matches)} likely matches: ", ', '.join([str(x) for x in possible_matches]))
+        print(f"\tBy newness, {len(possible_matches)} likely matches: ", ', '.join([str(x) for x in possible_matches]))
 
         # Sort by chance of facial distance ascending
         possible_matches = sorted(possible_matches, key=lambda x: x.Distance)
-        #print(f"\tAfter sorting, {len(possible_matches)} likely matches: ", ', '.join([str(x) for x in possible_matches]))
+        print(f"\tAfter sorting, {len(possible_matches)} likely matches: ", ', '.join([str(x) for x in possible_matches]))
 
         if len(possible_matches) > 0:
             best_match = possible_matches[0].Person

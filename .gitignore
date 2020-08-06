@@ -1,5 +1,7 @@
 cudaenv/
 env/
+.idea/
+__pycache__/
 face_recognition_repo
 *.jpg
 *.png
@@ -7,4 +9,4 @@ face_recognition_repo
 *.db
 !test-image.jpg
 sqlite3.exe
-*.log
+*.loggit comm
