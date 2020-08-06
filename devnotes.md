@@ -60,14 +60,14 @@ What if we identify and rotate faces, *then* crop/resize as necessary just the f
 
 Need to determine licensing
 
+Visualizing the calls for paperwork: https://stackoverflow.com/questions/582336/how-can-you-profile-a-python-script
+
 # Visualizations
 Part of WGU's capstone requirements. 
 
 Create a separate script to extract data from the database and create charts. 
 
 Example of matplotlib and PyQt 5: https://gist.github.com/holesond/b4f9db4b24eca00ef8b01a96c6e53a03
-
-Plotly or Matplotlib. Others?
 
 Visualization ideas:
 * Number of people in pictures

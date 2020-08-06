@@ -74,7 +74,7 @@ I added a "dirty" tracker for the "unknown" files and only updating database att
       [127 frames hidden]  numpy, pathlib, urllib, collections, ...
 ```
 
-For comparison, below is the same tree on a run where every image is new and thus needs to be encoded. Note that vast majority of time is spent on encoding, with a distant second-place going to writing the encodings into the database.
+For comparison, below is the same tree on a run where every image is new and thus needs to be encoded. Note that vast majority of time is spent on encoding, with a distant second-place going to writing the encodings into the database. There's not much that can be done to speed up the encoding, but reducing the number of times encodings are added would increase performance and prevent database size bloat.
 
 ```py
 128.642 <module>  lits.py:16
