@@ -123,6 +123,22 @@ class Database:
         image.in_database = True
         return image.dbid
 
+    def update_image_attributes(self, image: ImageFile) -> None:
+        sql = """
+            UPDATE Image
+            SET
+                date_modified = ?,
+                size_bytes = ?
+            WHERE
+                id = ?
+        """
+        params = [self.get_formatted_date_modified(image.filepath), os.path.getsize(image.filepath), image.dbid]
+        dbresponse = self.connection.execute(sql, params)
+        result = dbresponse.fetchall()
+        if dbresponse.rowcount != 1:
+            raise Exception(f"Unexpected behavior: wrong number of rows modified: {dbresponse.rowcount}")
+
+
     def add_person(self, name) -> int:
         """
         Adds a person to the database.
@@ -136,6 +152,8 @@ class Database:
         dbresponse = self.connection.execute(sql, [name])
         dbid = dbresponse.lastrowid
         return dbid
+
+
 
     def add_encoding(self, encoding: ndarray, associate_id: int, person: bool = False, image: bool = False) -> int:
         """
@@ -296,7 +314,7 @@ class Database:
     @classmethod
     def adapt_ImageFile(cls, image: ImageFile, include_path: bool = True):
         # Date and time stamp of the last time the file was modified
-        mtime = datetime.fromtimestamp(os.path.getmtime(image.filepath)).strftime(cls.datetime_format_string)
+        mtime = cls.get_formatted_date_modified(image.filepath)
 
         # Relative path is last because we won't always use it
         output = [os.path.basename(image.filepath), mtime, os.path.getsize(image.filepath)]
@@ -304,3 +322,7 @@ class Database:
             output.append(image.filepath)
 
         return output
+
+    @classmethod
+    def get_formatted_date_modified(cls, filepath: str):
+        return datetime.fromtimestamp(os.path.getmtime(filepath)).strftime(cls.datetime_format_string)

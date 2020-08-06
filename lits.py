@@ -34,9 +34,10 @@ from Model.ImageFile import ImageFile
 from Controllers.Database import Database
 from Controllers.FaceRecognizer import encode_faces, match_best
 
-valid_extensions = [".jpg"]  #[".jpg", ".png", ".bmp", ".gif"]
+valid_extensions = [".jpg"]  # [".jpg", ".png", ".bmp", ".gif"]
 log_path = "lastrun.log"
 logger = logging.getLogger(__name__)
+
 
 def main():
     print("LITS initializing...")
@@ -59,7 +60,6 @@ def main():
         print(f"Found pre-existing database at {path.abspath(args.db)}")
     else:
         print(f"Will create new database at {path.abspath(args.db)}")
-
 
     # Initialize database
     db = Database(args.db)
@@ -127,6 +127,7 @@ def main():
         matched_people_list = ", ".join(mp.name for mp in image.matched_people)
         print(f"{progress_percent}\tProcessing '{image.filepath}'...")
 
+        attribs_dirty = False # Have we modified the file?
         image_start_time = pc()
 
         # TODO: Parallelize here on a per-image basis
@@ -138,14 +139,20 @@ def main():
         if len(image.encodings_in_image) > 0:
             found_people: Dict[Person, FaceEncoding] = match_best(known_people, image.encodings_in_image)
 
-            # Write to file *prior* to storing to DB, else all the date_modified values would never match
+            # Write to file *prior* to storing to DB
             image.matched_people = found_people.keys()
             if len(image.matched_people) > 0:
-                image.append_keywords([mp.name for mp in image.matched_people])
+                append_count = image.append_keywords([mp.name for mp in image.matched_people])
+                if append_count > 0:
+                    attribs_dirty = True
 
             # Store to database
             for person, enc in found_people.items():
                 db.get_or_associate_encoding(enc.dbid, associate_id=person.dbid, person=True)
+
+        # Update image attributes, just in case we tweaked them.
+        if True:
+            db.update_image_attributes(image)
 
         # Stats and UI updates
         scan_count += 1
@@ -153,7 +160,7 @@ def main():
         time_taken = pc() - image_start_time
         timers.append(time_taken)
 
-    print(f"Done encoding {total:,} images. ({pc() - start_time:.0f}s total)")
+    print(f"Done encoding {total:,} images. ({pc() - start_time:.1f}s total)")
     print(f"Image times: {sum(timers):,.1f}s, avg {sum(timers) / len(timers):.2}s, max {max(timers):.2}")
 
     # Report statistics
@@ -171,11 +178,14 @@ def ensure_image_in_database(db: Database, image: ImageFile) -> int:
     image_id = db.get_image_id_by_attributes(image)
     if image_id:
         encodings: List[FaceEncoding] = db.get_encodings_by_image_id(image_id)
-        logging.debug(f"File {image.filepath} already in database (image_id: {image_id}) with {len(encodings)} faces(s).")
+        logging.debug(
+            f"File {image.filepath} already in database (image_id: {image_id}) with {len(encodings)} faces(s).")
     else:  # Encode and save
         new_encodings: List[ndarray] = encode_faces(image.filepath)
         image_id = db.add_image(image, new_encodings)
-        logging.debug(f"File {image.filepath} added to database (image_id: {image_id}) with {len(new_encodings)} face(s).")
+        logging.debug(
+            f"File {image.filepath} added to database (image_id: {image_id}) with {len(new_encodings)} face(s).")
+    image.dbid = image_id
     return image_id
 
 
@@ -185,6 +195,7 @@ def validate_path_exists(check_path: str, name: str):
     else:
         soft_exit(f"'{name}' path doesn't exist or is inaccessible. Evaluated to:\n\t{path.abspath(check_path)}")
 
+
 def get_all_compatible_files(folderpath: str) -> List[ImageFile]:
     all_matching: List[str] = []
     extensions = ["*" + ext for ext in valid_extensions]
@@ -193,8 +204,10 @@ def get_all_compatible_files(folderpath: str) -> List[ImageFile]:
     wrapped = [ImageFile(file) for file in all_matching]
     return wrapped
 
+
 def just_filename(in_path: str):
     return path.splitext(path.basename(in_path))[0]
+
 
 def soft_exit(message: str = ""):
     if message:

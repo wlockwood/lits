@@ -1,4 +1,5 @@
 # Builtins
+from glob import glob
 from typing import List, Any, Dict
 from os import path, listdir
 
@@ -111,8 +112,11 @@ class ImageFile:
 
     @staticmethod
     def clear_keywords_bulk(folderpath: str):
-        images_to_clear = [ImageFile(path.join(folderpath, f)) for f in listdir(folderpath)
-                          if path.isfile(path.join(folderpath, f))]
+        print(f"Trying to clear keywords in images found in {path.abspath(folderpath)}...")
+        images_to_clear = glob(folderpath + "/**/" + "*.jpg", recursive=True)
+        images_to_clear = [ImageFile(im) for im in images_to_clear]
+        print(f"Found {len(images_to_clear):,} files to clear keywords from.")
+
         for im in images_to_clear:
             im.clear_keywords()
             print(f"Cleared {im.filepath}")

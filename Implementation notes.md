@@ -18,6 +18,8 @@ Subjectively the accuracy felt significantly lower, so I set out to see if I cou
 ```
 Dividing the sum of false positive/negative hits by two means the system isn't doubly penalized for mistaking a face. Images with no faces in them were included in the test set and were assigned a score of 100% if no faces were found.
 
+The readme also indicates that dlib's face recognition is poor at recognizing children, and my own tests bore that out - basically any child under about six year old matched with the child in my "known" group, a blonde three-year-old girl.
+
 
 ## Duplication of work
 Two days after I finished the work to get the system to correctly identify known people in unknown pictures - the bulk of the work that was done on this project - I realized that one of the libaries I was importing included a CLI interface for doing exactly that. This was pretty disheartening, but ultimately, it's limited to just that, and is missing the database integration and metadata tagging features that make this activity useful to a photographer.
@@ -26,3 +28,72 @@ Two days after I finished the work to get the system to correctly identify known
 In the database, each `ImageFile` is uniquely identified by an auto-incrementing integer id, but I needed some way to reliably associate any given image file with the correct row in the database, preferably in a way that would survive files being moved around. I came up with (filename + date modified + file size) together as a way of doing so, although this has the major downside that any changes to a picture's metadata - which don't affect the content of the image itself, but are stored in the file and thus affect both its date modified according to the filesystem and the total size of the file (in most cases).
 
 To get around this, I intend to replace the current approach with an algorithm that would identify images by filename and confirm them by comparing a [perceptual hash](https://pypi.org/project/ImageHash/) of *just* the image data, and accepting anything within a fairly small hashed distance. This would mean that files that are only changed slightly should still be recognized and not re-scanned. The point in using two passes (filename *and then* a hash of image data) is that hashing an image's contents is significantly more expensive than reading its filename or filesystem metadata.
+
+## Performance Optimization
+The first pass over any given set of pictures is expected to be fairly slow, but any passes after the first one should generally be quite fast. This was true, but I noticed the application was slowing down as I fixed a couple of bugs that cropped up.
+
+I intially used the built-in tool cProfile to identify where things were slowing down as I added the database code, but found that with a well-developed application (as opposed to a small script) the output was too noisy to be useful. I tried filtering it a bit in Excel, but stopped after seeing a recommendation from [an article](https://pythonspeed.com/articles/beyond-cprofile/) that recommended Pyinstrument. Pyinstrument gave me this output, which made it immediately obvious where my application was spending its time on a run where all the encodings can be pulled from the database:
+```py
+13.025 <module>  lits.py:16
+├─ 10.781 main  lits.py:42
+│  ├─ 10.350 update_image_attributes  Controllers\Database.py:126
+│  │  └─ 10.342 [self]  
+│  └─ 0.349 get_all_compatible_files  lits.py:199
+│     └─ 0.348 <listcomp>  lits.py:204
+│        └─ 0.348 __init__  Model\ImageFile.py:16
+│           └─ 0.348 init_metadata  Model\ImageFile.py:54
+│              └─ 0.235 read_exif  pyexiv2\core.py:38
+│                    [2 frames hidden]  pyexiv2
+└─ 2.103 <module>  Controllers\FaceRecognizer.py:2
+   └─ 2.102 <module>  face_recognition\__init__.py:3
+         [315 frames hidden]  face_recognition, face_recognition_mo...
+```
+I added a "dirty" tracker for the "unknown" files and only updating database attributes for files that I knew had changed. Below is the view after that change.  
+<sub>Note: Pyinstrument is non-deterministic and won't always show exactly the same results for methods with low runtime, even though it will still be, broadly speaking, showing how long methods were running.<sub>
+
+```py
+2.697 <module>  lits.py:16
+├─ 2.097 <module>  Controllers\FaceRecognizer.py:2
+│  └─ 2.096 <module>  face_recognition\__init__.py:3
+│        [325 frames hidden]  face_recognition, face_recognition_mo...
+│           2.096 <module>  face_recognition\api.py:3
+│           ├─ 1.980 [self]  
+├─ 0.462 main  lits.py:42
+│  ├─ 0.362 get_all_compatible_files  lits.py:199
+│  │  └─ 0.361 <listcomp>  lits.py:204
+│  │     └─ 0.360 __init__  Model\ImageFile.py:16
+│  │        └─ 0.359 init_metadata  Model\ImageFile.py:54
+│  │           ├─ 0.244 read_exif  pyexiv2\core.py:38
+│  │           │     [5 frames hidden]  pyexiv2
+│  │           └─ 0.110 __init__  pyexiv2\core.py:14
+│  │                 [2 frames hidden]  pyexiv2
+│  └─ 0.055 match_best  Controllers\FaceRecognizer.py:49
+│     └─ 0.035 face_distance  face_recognition\api.py:63
+│           [2 frames hidden]  face_recognition
+└─ 0.110 <module>  numpy\__init__.py:106
+      [127 frames hidden]  numpy, pathlib, urllib, collections, ...
+```
+
+For comparison, below is the same tree on a run where every image is new and thus needs to be encoded. Note that vast majority of time is spent on encoding, with a distant second-place going to writing the encodings into the database.
+
+```py
+128.642 <module>  lits.py:16
+├─ 126.444 main  lits.py:42
+│  ├─ 99.613 ensure_image_in_database  lits.py:177
+│  │  ├─ 53.847 encode_faces  Controllers\FaceRecognizer.py:19
+│  │  │  ├─ 46.096 face_encodings  face_recognition\api.py:203
+│  │  │  │     [8 frames hidden]  face_recognition
+│  │  │  │        44.110 _raw_face_locations  face_recognition\api.py:92
+│  │  │  └─ 7.368 resize  PIL\Image.py:1838
+│  │  │        [8 frames hidden]  PIL
+│  │  └─ 45.494 add_image  Controllers\Database.py:99
+│  │     ├─ 30.835 add_encoding  Controllers\Database.py:158
+│  │     │  ├─ 16.037 get_or_associate_encoding  Controllers\Database.py:176
+│  │     │  └─ 14.799 [self]  
+│  │     └─ 14.659 [self]  
+│  ├─ 13.607 update_image_attributes  Controllers\Database.py:126
+│  └─ 12.112 get_or_associate_encoding  Controllers\Database.py:176
+└─ 2.066 <module>  Controllers\FaceRecognizer.py:2
+   └─ 2.065 <module>  face_recognition\__init__.py:3
+         [328 frames hidden]  face_recognition, face_recognition_mo...
+```
