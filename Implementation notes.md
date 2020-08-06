@@ -29,7 +29,7 @@ In the database, each `ImageFile` is uniquely identified by an auto-incrementing
 
 To get around this, I intend to replace the current approach with an algorithm that would identify images by filename and confirm them by comparing a [perceptual hash](https://pypi.org/project/ImageHash/) of *just* the image data, and accepting anything within a fairly small hashed distance. This would mean that files that are only changed slightly should still be recognized and not re-scanned. The point in using two passes (filename *and then* a hash of image data) is that hashing an image's contents is significantly more expensive than reading its filename or filesystem metadata.
 
-## Performance Optimization
+## Overall Performance Optimization
 The first pass over any given set of pictures is expected to be fairly slow, but any passes after the first one should generally be quite fast. This was true, but I noticed the application was slowing down as I fixed a couple of bugs that cropped up.
 
 I intially used the built-in tool cProfile to identify where things were slowing down as I added the database code, but found that with a well-developed application (as opposed to a small script) the output was too noisy to be useful. I tried filtering it a bit in Excel, but stopped after seeing a recommendation from [an article](https://pythonspeed.com/articles/beyond-cprofile/) that recommended Pyinstrument. Pyinstrument gave me this output, which made it immediately obvious where my application was spending its time on a run where all the encodings can be pulled from the database:
@@ -74,7 +74,7 @@ I added a "dirty" tracker for the "unknown" files and only updating database att
       [127 frames hidden]  numpy, pathlib, urllib, collections, ...
 ```
 
-For comparison, below is the same tree on a run where every image is new and thus needs to be encoded. Note that vast majority of time is spent on encoding, with a distant second-place going to writing the encodings into the database. There's not much that can be done to speed up the encoding, but reducing the number of times encodings are added would increase performance and prevent database size bloat.
+For comparison, below is the same tree on a run where every image is new and thus needs to be encoded. Note that vast majority of time is spent on encoding, with a distant second-place going to writing the encodings into the database. There's not much that can be done to speed up the encoding, but reducing the number of times encodings are added would increase performance and prevent database size bloat. Adding a maintenance routine that would identify old image database entries would also help prevent bloat.
 
 ```py
 128.642 <module>  lits.py:16
@@ -97,3 +97,7 @@ For comparison, below is the same tree on a run where every image is new and thu
    └─ 2.065 <module>  face_recognition\__init__.py:3
          [328 frames hidden]  face_recognition, face_recognition_mo...
 ```
+
+## Analysis and Debugging Tools
+As this application uses SQLite, I initially looked at the contents of the database using Python's built-in `sqlite3` module, but later discovered [SQLite Tools](https://www.sqlite.org/download.html), a command-line interface that is made available by the SQLite project. This was very helpful in that it enabled me to run ad-hoc queries using standard SQL syntax and see the results without writing a couple lines of code each time.
+A few days after I found SQLite Tools, I discovered [DBBrowser for SQLite](https://sqlitebrowser.org/), which has a GUI very reminiscent of SQL Server Management Studio, with which most Microsoft-stack database administrators and users will likely have decent familiarity.
