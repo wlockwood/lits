@@ -1,12 +1,10 @@
 # Builtins
 from typing import List, Any, Dict
-import unittest
+from os import path, listdir
 
 # External modules
 from numpy.core.multiarray import ndarray
 import pyexiv2 as pe2
-
-# Custom code
 
 
 class ImageFile:
@@ -89,15 +87,17 @@ class ImageFile:
         if not self.md_init_complete:
             self.init_metadata()
 
-        current = self.get_keywords()
+        initial_kw: List[str] = self.get_keywords()
+        current = initial_kw.copy()
 
         new_kws = 0
         for keyword in to_append:
             if keyword not in current:
                 current.append(keyword)
                 new_kws += 1
-        if len(current) > 0 and type(current[0]) != str:
-            print("BUG!")
+        if current == initial_kw:
+            return 0
+
         current_string: str = ",".join(current)
 
         patch = {self.keyword_field_name: current_string}
@@ -109,5 +109,12 @@ class ImageFile:
 
         return new_kws
 
+    @staticmethod
+    def clear_keywords_bulk(folderpath: str):
+        images_to_clear = [ImageFile(path.join(folderpath, f)) for f in listdir(folderpath)
+                          if path.isfile(path.join(folderpath, f))]
+        for im in images_to_clear:
+            im.clear_keywords()
+            print(f"Cleared {im.filepath}")
 # Circular import
 from Model import Person

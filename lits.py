@@ -17,10 +17,12 @@ GitHub: wlockwood/lits
 
 # Builtins
 import argparse
-from os import path, getcwd, listdir
-from typing import List, Optional
+from os import path, getcwd
+from glob import glob
+from typing import List, Optional, Dict
 from time import perf_counter as pc
 from datetime import datetime
+import logging
 # External modules
 
 # Custom modules
@@ -32,12 +34,14 @@ from Model.ImageFile import ImageFile
 from Controllers.Database import Database
 from Controllers.FaceRecognizer import encode_faces, match_best
 
-valid_extensions = [".jpg", ".png", ".bmp", ".gif"]
-
+valid_extensions = [".jpg"]  #[".jpg", ".png", ".bmp", ".gif"]
+log_path = "lastrun.log"
+logger = logging.getLogger(__name__)
 
 def main():
     print("LITS initializing...")
-    print(f"Running from {getcwd()}")
+    print(f"Running from {getcwd()}, logging to {log_path}")
+    logging.basicConfig(filename=log_path, level=logging.DEBUG)
 
     # Parse arguments and check validity
     parser = argparse.ArgumentParser()
@@ -62,8 +66,6 @@ def main():
 
     # Initialize list of known people
     # TODO: Add support for people folders instead of just single pictures
-
-
     known_person_images = get_all_compatible_files(args.known)
     print(f"{len(known_person_images):,} images of known people in {args.known}")
 
@@ -84,16 +86,16 @@ def main():
 
         if not found_person:  # If person doesn't exist, create them and associate their first face encoding
             person_id = db.add_person(person_name)
-            encoding_id = db.associate_encoding(kpi_encoding.dbid, associate_id=person_id, person=True)
+            encoding_id = db.get_or_associate_encoding(kpi_encoding.dbid, associate_id=person_id, person=True)
         else:  # Person already exists, associate this encoding if it's not already so
             matching_encodings = [enc for enc in found_person.encodings if enc.equals(kpi_encoding)]
 
             if len(matching_encodings) > 0:
-                print(f"File {kpi.filepath} already in database for person '{person_name}'.")
+                logging.debug(f"File {kpi.filepath} already in database for person '{person_name}'.")
 
             if len(matching_encodings) == 0:  # No match, so associate this encoding to person
-                db.associate_encoding(kpi_encoding.dbid, associate_id=found_person.dbid, person=True)
-                print(
+                db.get_or_associate_encoding(kpi_encoding.dbid, associate_id=found_person.dbid, person=True)
+                logging.debug(
                     f"File {kpi.filepath} already in database, but wasn't associated with person '{person_name}'.")
 
     # Database now up to date, extract all known people
@@ -120,25 +122,39 @@ def main():
     print(f"Starting scan at {datetime.now()}")
 
     for image in images_to_scan:  # Iterating individually for now to make progress reporting easier
+        # UI Updates
+        progress_percent = f"{scan_count / total * 100:3.1f}%"
+        matched_people_list = ", ".join(mp.name for mp in image.matched_people)
+        print(f"{progress_percent}\tProcessing '{image.filepath}'...")
+
         image_start_time = pc()
+
         # TODO: Parallelize here on a per-image basis
-        ensure_image_in_database(db, image)
+        # TODO: Add error handling so single-image problems won't crash the whole run.
+        image_id = ensure_image_in_database(db, image)
+        image.encodings_in_image = db.get_encodings_by_image_id(image_id)
 
         # Match people
         if len(image.encodings_in_image) > 0:
-            found_people = match_best(known_people, image.encodings_in_image)
-            image.matched_people = found_people
+            found_people: Dict[Person, FaceEncoding] = match_best(known_people, image.encodings_in_image)
+
+            # Write to file *prior* to storing to DB, else all the date_modified values would never match
+            image.matched_people = found_people.keys()
             if len(image.matched_people) > 0:
                 image.append_keywords([mp.name for mp in image.matched_people])
 
+            # Store to database
+            for person, enc in found_people.items():
+                db.get_or_associate_encoding(enc.dbid, associate_id=person.dbid, person=True)
+
         # Stats and UI updates
         scan_count += 1
-        progress_percent = f"{scan_count / total * 100:3.1f}%"
+
         time_taken = pc() - image_start_time
-        matched_people_list = ", ".join(mp.name for mp in image.matched_people)
-        print(progress_percent, f" Found {len(image.encodings_in_image)} faces in '{image.filepath}':",
-              f"{matched_people_list} ({time_taken:.1f}s)")
+        timers.append(time_taken)
+
     print(f"Done encoding {total:,} images. ({pc() - start_time:.0f}s total)")
+    print(f"Image times: {sum(timers):,.1f}s, avg {sum(timers) / len(timers):.2}s, max {max(timers):.2}")
 
     # Report statistics
     """
@@ -151,16 +167,17 @@ def main():
     """
 
 
-def ensure_image_in_database(db: Database, image: ImageFile):
+def ensure_image_in_database(db: Database, image: ImageFile) -> int:
     image_id = db.get_image_id_by_attributes(image)
     if image_id:
         encodings: List[FaceEncoding] = db.get_encodings_by_image_id(image_id)
-        print(f"File {image.filepath} already in database (image_id: {image_id}) with {len(encodings)} faces(s).")
+        logging.debug(f"File {image.filepath} already in database (image_id: {image_id}) with {len(encodings)} faces(s).")
     else:  # Encode and save
         new_encodings: List[ndarray] = encode_faces(image.filepath)
         image_id = db.add_image(image, new_encodings)
-        print(f"File {image.filepath} added to database (image_id: {image_id}) with {len(new_encodings)} face(s).")
+        logging.debug(f"File {image.filepath} added to database (image_id: {image_id}) with {len(new_encodings)} face(s).")
     return image_id
+
 
 def validate_path_exists(check_path: str, name: str):
     if path.exists(check_path):
@@ -168,15 +185,13 @@ def validate_path_exists(check_path: str, name: str):
     else:
         soft_exit(f"'{name}' path doesn't exist or is inaccessible. Evaluated to:\n\t{path.abspath(check_path)}")
 
-
-def get_all_compatible_files(folderpath: str):
-    all_files = [path.join(folderpath, file) for file in listdir(folderpath)
-                 if path.isfile(path.join(folderpath, file))
-
-                 ]
-    valid_files = [f for f in all_files if path.splitext(f)[1] in valid_extensions]
-    as_images = [ImageFile(f) for f in all_files]
-    return as_images
+def get_all_compatible_files(folderpath: str) -> List[ImageFile]:
+    all_matching: List[str] = []
+    extensions = ["*" + ext for ext in valid_extensions]
+    for extension in extensions:
+        all_matching.extend(glob(folderpath + "/**/" + extension, recursive=True))
+    wrapped = [ImageFile(file) for file in all_matching]
+    return wrapped
 
 def just_filename(in_path: str):
     return path.splitext(path.basename(in_path))[0]

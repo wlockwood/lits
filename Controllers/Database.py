@@ -2,7 +2,7 @@ import sqlite3
 import time
 from datetime import datetime
 from typing import List, Optional
-
+import logging
 import numpy
 from numpy.core.multiarray import ndarray
 
@@ -23,6 +23,7 @@ class Database:
     """
     open_connections = []
     datetime_format_string = "%Y%m%d-%H%M"  # Should result in 20200804-0934, etc.
+    logger = logging.getLogger(__name__)
 
     def __init__(self, db_file_path: str):
         self.db_file_path = db_file_path
@@ -151,10 +152,10 @@ class Database:
         dbresponse = self.connection.execute(sql, [encoding_bytes])
         dbid = dbresponse.lastrowid
 
-        self.associate_encoding(dbid, associate_id, person, image)
+        self.get_or_associate_encoding(dbid, associate_id, person, image)
         return dbid
 
-    def associate_encoding(self, encoding_id: int, associate_id: int, person: bool = False, image: bool = False):
+    def get_or_associate_encoding(self, encoding_id: int, associate_id: int, person: bool = False, image: bool = False):
         """
         Associate an encoding to a person or image
         :param encoding_id: The id of the encoding to associate
@@ -163,6 +164,19 @@ class Database:
         :param image: Is this associated to an image?
         :return: Id of new association
         """
+        # Check for pre-existing
+        if person + image < 1:
+            raise Exception("Must specify a person or image to associate an encoding to.")
+
+        if person:
+            sql = "SELECT id FROM PersonEncoding WHERE encoding_id = ? AND person_id = ?"
+        if image:
+            sql = "SELECT id FROM PersonEncoding WHERE encoding_id = ? AND person_id = ?"
+        dbresponse = self.connection.execute(sql, [encoding_id, associate_id])
+        result = dbresponse.fetchall()
+        if len(result) == 1:
+            return result[0]["id"]
+
         # Insert
         if person:
             sql = "INSERT INTO PersonEncoding (encoding_id, person_id) VALUES (?,?)"
@@ -276,10 +290,6 @@ class Database:
         encodings = self.get_encodings_by_person_id(person_id)
 
         return Person(person_id, row["name"], encodings)
-
-
-
-
 
 
     # Pseudo-adapters - Don't always want every parameter, so not using the real "adapters" functionality

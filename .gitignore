@@ -7,3 +7,4 @@ face_recognition_repo
 *.db
 !test-image.jpg
 sqlite3.exe
+*.log
