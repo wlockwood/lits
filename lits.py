@@ -52,6 +52,7 @@ def main():
     parser.add_argument("--tolerance", help="Lower forces stricter matches", default=0.6, type=float)
     # TODO: Add "--clear-keywords"? Would ignore pre-existing keywords when applying new
     # TODO: Add "--rescan"? Would ignore encodings cached in database
+    # TODO: Add "--update-cached-metadata"? Would push new metadata from EXIF/IPTC/XMP in case the set we're caching changes
     args = parser.parse_args()
 
     assert path.exists(args.scanroot), f"'scanroot' path doesn't exist: {path.abspath(args.scanroot)}"
@@ -163,8 +164,8 @@ def main():
     print(f"Done encoding {total:,} images. ({pc() - start_time:.1f}s total)")
     print(f"Image times: {sum(timers):,.1f}s, avg {sum(timers) / len(timers):.2}s, max {max(timers):.2}")
 
-    # Report statistics
     """
+    ? Report statistics ?  
     Images scanned
     Found faces
     Time taken
