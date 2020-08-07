@@ -15,7 +15,9 @@ from Controllers.Database import Database
 
 
 def show_dashboard(db: Database):
+    #style.use('fivethirtyeight')
     fig, axes = plt.subplots(2, 3)
+    fig.canvas.set_window_title("LITS Data Dashboard")
     fig.set_size_inches(15, 10)
     fig.set_dpi(100)
 
@@ -26,8 +28,9 @@ def show_dashboard(db: Database):
     graph2d_from_query(db, axes[0][2], "Picture Counts Over Time", "Date", "Number of Pictures",
                        graph_type="bar", rotation=30)
 
+    # TODO: Turn into a clustered bar/column chart
     graph2d_from_query(db, axes[1][0], "Aperture Frequency", "Aperture", "Number of Pictures",
-                       rotation=30, graph_type="bar")
+                       rotation=90, graph_type="bar")
 
     # Shutter speed is logarithmic so needs to be displayed on a log scale to be readable
     graph2d_from_query(db, axes[1][1], "Shutter Speed Frequency", "Shutter Speed in Seconds", "Number of Pictures")
