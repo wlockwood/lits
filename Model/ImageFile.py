@@ -2,6 +2,7 @@
 from glob import glob
 from typing import List, Any, Dict
 from os import path, listdir
+import logging
 
 # External modules
 from numpy.core.multiarray import ndarray
@@ -109,6 +110,43 @@ class ImageFile:
         self.iptc[self.keyword_field_name] = current_string
 
         return new_kws
+
+    def get_exposure_data(self):
+        """
+        Gets common exposure data from EXIF and converts them into numbers where possible.
+        :return:
+        """
+        output = {"aperture": None, "shutter_speed": None, "iso": None}
+
+        try:
+            aperture = self.exif.get("Exif.Photo.FNumber")
+            output["aperture"] = round(self.frac_string_to_number(aperture), 1) if aperture else None
+        except:
+            logging.warning(f"Failed to parse EXIF aperture field for '{self.filepath}'. Expected a fraction, got '{aperture}'")
+
+        try:
+            ss = self.exif.get("Exif.Photo.ExposureTime")
+            output["shutter_speed"] = self.frac_string_to_number(ss) if ss else None
+        except:
+            logging.warning(f"Failed to parse EXIF shutter_speed field for '{self.filepath}'. Expected an fraction, got '{ss}'")
+
+        try:
+            iso = self.exif.get("Exif.Photo.ISOSpeedRatings")
+            iso = iso.split()[0]
+            output["iso"] = int(iso) if iso else None
+        except:
+            logging.warning(f"Failed to parse EXIF ISO field for '{self.filepath}'. Expected an int, got '{iso}'")
+
+        return output
+
+    @staticmethod
+    def frac_string_to_number(frac: str):
+        if not frac or frac == "":
+            return 0
+        parts = frac.split("/")
+        nom = float(parts[0])
+        den = float(parts[1])
+        return nom/den
 
     @staticmethod
     def clear_keywords_bulk(folderpath: str):

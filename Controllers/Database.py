@@ -6,7 +6,6 @@ import logging
 import numpy
 from numpy.core.multiarray import ndarray
 
-
 from pprint import pprint as pp
 import os
 
@@ -54,12 +53,17 @@ class Database:
         """
         create_tables = """
         CREATE TABLE IF NOT EXISTS Image    --A single image file per row
-            (id INTEGER PRIMARY KEY, filename TEXT, path TEXT, date_modified DATETIME, size_bytes INT,
+            (id INTEGER PRIMARY KEY, 
+            filename TEXT NOT NULL, 
+            path TEXT NOT NULL, 
+            date_modified DATETIME NOT NULL, 
+            size_bytes INT NOT NULL,
+            aperture REAL, shutter_speed REAL, iso INT,
             UNIQUE(filename, date_modified, size_bytes)
             );
 
         CREATE TABLE IF NOT EXISTS Person   --A single individual person per row
-            (id INTEGER PRIMARY KEY, name TEXT);
+            (id INTEGER PRIMARY KEY, name TEXT NOT NULL);
 
         CREATE TABLE IF NOT EXISTS Encoding --Encoded version of a face found in an image
             (id INTEGER PRIMARY KEY, 
@@ -109,7 +113,7 @@ class Database:
 
         # Insert images
         insert_image = """
-        INSERT INTO Image (filename, date_modified, size_bytes, path) values (?, ?, ?, ?)
+        INSERT INTO Image (filename, date_modified, size_bytes, aperture, shutter_speed, iso, path) values (?, ?, ?, ?, ?, ?, ?)
         """
         dbresponse = self.connection.execute(insert_image, self.adapt_ImageFile(image))
         image.dbid = dbresponse.lastrowid
@@ -128,16 +132,18 @@ class Database:
             UPDATE Image
             SET
                 date_modified = ?,
-                size_bytes = ?
+                size_bytes = ?,
+                aperture = ?,
+                shutter_speed = ?,
+                iso = ?
             WHERE
                 id = ?
         """
-        params = [self.get_formatted_date_modified(image.filepath), os.path.getsize(image.filepath), image.dbid]
+        params = self.adapt_ImageFile(image)[1:6] + [image.dbid]
         dbresponse = self.connection.execute(sql, params)
         result = dbresponse.fetchall()
         if dbresponse.rowcount != 1:
             raise Exception(f"Unexpected behavior: wrong number of rows modified: {dbresponse.rowcount}")
-
 
     def add_person(self, name) -> int:
         """
@@ -152,8 +158,6 @@ class Database:
         dbresponse = self.connection.execute(sql, [name])
         dbid = dbresponse.lastrowid
         return dbid
-
-
 
     def add_encoding(self, encoding: ndarray, associate_id: int, person: bool = False, image: bool = False) -> int:
         """
@@ -215,7 +219,7 @@ class Database:
         # Get image
         sql = "SELECT * FROM Image WHERE filename = ? AND date_modified = ? AND size_bytes = ?"
         params = self.adapt_ImageFile(image, include_path=False)
-        dbresponse = self.connection.execute(sql, params)
+        dbresponse = self.connection.execute(sql, params[0:3])  # Don't use exposure values
         result = dbresponse.fetchall()
 
         if len(result) > 1:
@@ -309,15 +313,20 @@ class Database:
 
         return Person(person_id, row["name"], encodings)
 
-
     # Pseudo-adapters - Don't always want every parameter, so not using the real "adapters" functionality
     @classmethod
     def adapt_ImageFile(cls, image: ImageFile, include_path: bool = True):
         # Date and time stamp of the last time the file was modified
         mtime = cls.get_formatted_date_modified(image.filepath)
-
+        exposure_data = image.get_exposure_data()
         # Relative path is last because we won't always use it
-        output = [os.path.basename(image.filepath), mtime, os.path.getsize(image.filepath)]
+        output = [os.path.basename(image.filepath),    # 0
+                  mtime,                               # 1
+                  os.path.getsize(image.filepath),     # 2
+                  exposure_data.get("aperture"),       # 3
+                  exposure_data.get("shutter_speed"),  # 4
+                  exposure_data.get("iso")             # 5
+                  ]
         if include_path:
             output.append(image.filepath)
 
