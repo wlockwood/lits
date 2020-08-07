@@ -3,51 +3,12 @@ Concept: Locally-run NN tagging for images. To eventually include faces, emotion
 
 ## Minimum viable product
 Facial recognition for running in bulk across many images on your local machine.
-An interface for putting names to face groups (many face versions that are all the same person)
+A dashboard, for capstone requirement
 
 # Development Steps
-* Read image tags
-* Write image tags
-* ? Detect a face in an image
-* ? Detect all faces in an image
-* ? Detect all faces in multiple images
-* Face alignment: https://www.pyimagesearch.com/2017/05/22/face-alignment-with-opencv-and-python/
-* Recognize one face in one image
-* Recognize multiple faces in one image
-   *Promising: https://www.pyimagesearch.com/2018/06/18/face-recognition-with-opencv-python-and-deep-learning/
-* Face recognition optimization
-   * Batch process: https://github.com/ageitgey/face_recognition/blob/master/examples/find_faces_in_batches.py
-* Database (at picture root, probably SQLite)
-* After a scan, update database so that reports are fast
 * User interface: face labeling
 * User interface: searching
 * User interface: reports/visualizations
-
-# Modules
-Module breakdown moved to Modules.md
-
-# Program flow
-* Ask user for image search root
-* Ask user for known people folder
-* Ask user which analysis to do: face/quality/objects/emotion/age/gender
-* List all files in folder, filter for files we can process, notify user of files we can't
-* If image is in database, skip if it already has all the data we're extracting this run (face/quality/etc) and the date modified (?) matches
-* Encode faces
-* Run analyses on it and store to database
-* Save tags for group
-
-# Database design
-* Images: Names, date taken, date modified, MD5 hash (?), exposure data, camera/lens data
-* People: Names and encodings of known people
-* ImagePeople: Encodings and locations of faces in images, FK:ImageId, FK:PeopleId if matched to a known person
-* ImageObjects: Encodings of objects? Maybe just image-object associations. Maybe should just be on the image table?
-
-# Optimization
-* Multiprocess per-picture. Starmap?
-* Take in a list of analyses to perform rather than assuming f_r is it.
-* Multi-process access to sqlite may run into concurrency issues
-* Test whether images need to be rotated prior to being run through f_r
-   * https://medium.com/@ageitgey/the-dumb-reason-your-fancy-computer-vision-app-isnt-working-exif-orientation-73166c7d39da
 
 # Notes 
 Google Photos can easily create a pre-tagged dataset, in the sense that I can have folders where each picture contains at least that person. Not sure how to handle multiple people this way though.
@@ -79,7 +40,12 @@ Visualization ideas:
 * exposure details over time
 * time of day picture is taken
  
- 
+# Optimization
+* Multiprocess per-picture. Starmap?
+* Take in a list of analyses to perform rather than assuming f_r is it.
+* Multi-process access to sqlite may run into concurrency issues
+* Test whether images need to be rotated prior to being run through f_r
+   * https://medium.com/@ageitgey/the-dumb-reason-your-fancy-computer-vision-app-isnt-working-exif-orientation-73166c7d39da
  
 # Enhancements
 Add a face clustering functionality so that users can easily pick out which people should be added to known faces
