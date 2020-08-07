@@ -23,16 +23,16 @@ from typing import List, Optional, Dict
 from time import perf_counter as pc
 from datetime import datetime
 import logging
+from numpy.core.multiarray import ndarray
 # External modules
 
 # Custom modules
-from numpy.core.multiarray import ndarray
-
 from Model.FaceEncoding import FaceEncoding
 from Model.Person import Person
 from Model.ImageFile import ImageFile
 from Controllers.Database import Database
 from Controllers.FaceRecognizer import encode_faces, match_best
+import dashboard
 
 valid_extensions = [".jpg"]  # [".jpg", ".png", ".bmp", ".gif"]
 log_path = "lastrun.log"
@@ -161,8 +161,11 @@ def main():
         time_taken = pc() - image_start_time
         timers.append(time_taken)
 
-    print(f"Done encoding {total:,} images. ({pc() - start_time:.1f}s total)")
+
     print(f"Image times: {sum(timers):,.1f}s, avg {sum(timers) / len(timers):.2}s, max {max(timers):.2}")
+    print(f"Done encoding {total:,} images. ({pc() - start_time:.1f}s total)")
+    print("Opening dashboard...")
+    dashboard.show_dashboard(db)
 
     """
     ? Report statistics ?  
@@ -220,4 +223,4 @@ def soft_exit(message: str = ""):
 
 if __name__ == "__main__":
     main()
-    soft_exit("LITS Done!")
+    soft_exit()
