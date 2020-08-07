@@ -20,7 +20,7 @@ def encode_faces(filepath: str, jitter: int = 1, resize_to: int = 1500) -> List[
     """
     Populates the encodings_in_image field of an Image
 
-    :param image: An ImageFile with zero or more faces in it.
+    :param filepath: Path to a readable image with zero or more faces.
     :param jitter: How many times to transform a face. Higher number is slower but more accurate.
     :param resize_to: Size to resize to. Lower number is faster but less accurate.
     :return: The input list of images.
