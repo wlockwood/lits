@@ -5,8 +5,7 @@ __pycache__/
 face_recognition_repo
 *.jpg
 *.png
-.idea
 *.db
-!test-image.jpg
-sqlite3.exe
+*.exe
 *.log
+!test-image.jpg
