@@ -97,6 +97,39 @@ For comparison, below is the same tree on a run where every image is new and thu
    └─ 2.065 <module>  face_recognition\__init__.py:3
          [328 frames hidden]  face_recognition, face_recognition_mo...
 ```
+I loaded more data, bringing the test data set from 78 images to 510, and re-ran LITS. The profiler output for that run is below, but take note of the 352 seconds of "show dashboard" that are caused by it waiting on the user once everything else is complete. Removing that, we can see that the 432 additional pictures were encoded and added to the database in 445 seconds, a rate of ~1.0 images per second. Also note that the resize operation took 25% of that 452 seconds. This is explained partially by the bulk load of extra data being images straight from a Nikon D7100 and being 3-9MB in size.
+```py
+917.595 <module>  lits.py:16
+└─ 915.088 main  lits.py:42
+   ├─ 445.905 ensure_image_in_database  lits.py:181
+   │  ├─ 343.901 encode_faces  Controllers\FaceRecognizer.py:19
+   │  │  ├─ 218.451 face_encodings  face_recognition\api.py:203
+   │  │  │     [8 frames hidden]  face_recognition
+   │  │  │        216.538 _raw_face_locations  face_recognition\api.py:92
+   │  │  └─ 123.011 resize  PIL\Image.py:1838
+   │  │        [10 frames hidden]  PIL
+   │  └─ 98.610 add_image  Controllers\Database.py:105
+   │     ├─ 73.174 [self]  
+   │     └─ 25.436 add_encoding  Controllers\Database.py:166
+   │        ├─ 13.146 get_or_associate_encoding  Controllers\Database.py:184
+   │        └─ 12.290 [self]  
+   ├─ 352.076 show_dashboard  dashboard.py:17
+   │  └─ 351.277 show  matplotlib\pyplot.py:307
+   │        [1530 frames hidden]  matplotlib, tkinter, logging, numpy, ...
+   │           351.265 mainloop  tkinter\__init__.py:1281
+   │           ├─ 324.834 [self]  
+   ├─ 83.185 update_image_attributes  Controllers\Database.py:134
+   │  └─ 83.154 [self]  
+   ├─ 21.103 get_all_compatible_files  lits.py:203
+   │  └─ 21.098 <listcomp>  lits.py:208
+   │     └─ 21.098 __init__  Model\ImageFile.py:18
+   │        └─ 21.097 init_metadata  Model\ImageFile.py:56
+   │           ├─ 11.687 __init__  pyexiv2\core.py:14
+   │           │     [2 frames hidden]  pyexiv2
+   │           └─ 9.408 read_exif  pyexiv2\core.py:38
+   │                 [6 frames hidden]  pyexiv2
+   └─ 11.010 get_or_associate_encoding  Controllers\Database.py:184
+```
 
 ## Analysis and Debugging Tools
 As this application uses SQLite, I initially looked at the contents of the database using Python's built-in `sqlite3` module, but later discovered [SQLite Tools](https://www.sqlite.org/download.html), a command-line interface that is made available by the SQLite project. This was very helpful in that it enabled me to run ad-hoc queries using standard SQL syntax and see the results without writing a couple lines of code each time.
