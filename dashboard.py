@@ -204,19 +204,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
     db = Database(args.db)
     show_dashboard(db)
-
-"""
-# Some example data to display
-x = np.linspace(0, 2 * np.pi, 400)
-y = np.sin(x ** 2)
-
-fig, (ax1, ax2, ax3) = plt.subplots(1, 3)
-fig.suptitle('Horizontally stacked subplots')
-ax1.plot(x, y)
-ax2.plot(x, -y)
-ax3.plot(x, z)
-
-print("Interactive:", plt.isinteractive())
-plt.show()
-print("Done")
-"""
