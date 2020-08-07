@@ -24,6 +24,7 @@ class Database:
     logger = logging.getLogger(__name__)
 
     # TODO: Refactor to put metadata fields (exposure, etc.) on their own table
+    # TODO: Use exif.date_taken instead of date_modified to identify files. Needs to be hhmmss instead of hhmm though.
 
     def __init__(self, db_file_path: str):
         self.db_file_path = db_file_path
@@ -315,21 +316,21 @@ class Database:
         # Date and time stamp of the last time the file was modified
         mtime = cls.get_formatted_date_modified(image.filepath)
 
-        exposure_data = image.get_exposure_data()
-        date_taken = exposure_data.get("date_taken")
+        exif_data = image.get_salient_exif_data()
+        date_taken = exif_data.get("date_taken")
         date_taken = date_taken and date_taken.strftime(cls.datetime_format_string)  # Null conditional
 
         # Relative path is last because we won't always use it
-        output = [os.path.basename(image.filepath),    # 0
-                  mtime,                               # 1
-                  os.path.getsize(image.filepath),     # 2
-                  exposure_data.get("aperture"),       # 3
-                  exposure_data.get("shutter_speed"),  # 4
-                  exposure_data.get("iso"),            # 5
-                  date_taken                           # 6
+        output = [os.path.basename(image.filepath),  # 0
+                  mtime,                             # 1
+                  os.path.getsize(image.filepath),   # 2
+                  exif_data.get("aperture"),         # 3
+                  exif_data.get("shutter_speed"),    # 4
+                  exif_data.get("iso"),              # 5
+                  date_taken                         # 6
                   ]
         if include_path:
-            output.append(image.filepath)              # 7
+            output.append(image.filepath)            # 7
 
         return output
 

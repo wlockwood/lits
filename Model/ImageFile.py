@@ -14,6 +14,7 @@ class ImageFile:
     encoding_store_field_name = "Xmp.dc.Description"  # TODO: Extend pyexiv2 to support custom namespaces
     keyword_field_name = "Iptc.Application2.Keywords"
     normal_encoding = "ISO-8859-1"  # Single-byte unicode approximation
+    exif_timestamp_format = "%Y:%m:%d %H:%M:%S"
 
     def __init__(self, filepath: str, skip_md_init: bool = False):
         """
@@ -26,7 +27,7 @@ class ImageFile:
         # Other fields
         self.extension = self.filepath.split(".")[-1]
         self.dbid: int = -1
-        self.encodings_in_image: List[ndarray] = []
+        self.encodings_in_image: List[ndarray] = []  # Not a list of FaceEncoding instances because it might not be in the DB yet
         self.matched_people: List[Person] = []
         self.in_database = False
 
@@ -112,7 +113,7 @@ class ImageFile:
 
         return new_kws
 
-    def get_exposure_data(self):
+    def get_salient_exif_data(self):
         """
         Gets common exposure data from EXIF and converts them into numbers where possible.
         :return:
@@ -142,7 +143,7 @@ class ImageFile:
 
         try:
             date_taken = self.exif.get("Exif.Photo.DateTimeOriginal")
-            date_taken = datetime.strptime(date_taken, "%Y:%m:%d %H:%M:%S")
+            date_taken = datetime.strptime(date_taken, self.exif_timestamp_format)
             output["date_taken"] = date_taken if date_taken else None
         except:
             logging.warning(f"Failed to parse EXIF 'DateTimeOriginal' field for '{self.filepath}'. Expected an datetime, got '{date_taken}'")
