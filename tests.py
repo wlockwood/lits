@@ -10,6 +10,7 @@ import numpy
 
 from Controllers.Database import Database
 from Controllers.FaceRecognizer import encode_faces, match_best
+from Model.FaceEncoding import FaceEncoding
 from Model.ImageFile import ImageFile
 from Model.Person import Person
 
@@ -18,10 +19,9 @@ class TestFaceRecognizer(unittest.TestCase):
     my_dir = path.dirname(__file__)
     test_data_path = "test-data\\"
 
-    known_images = [ImageFile(test_data_path + "known\\will.jpg", skip_md_init=True)]
-    test_faces = encode_faces(known_images.filepath)
-    test_person = Person("will")
-    test_person.encodings = test_faces[0].encodings_in_image
+    known_image = ImageFile(test_data_path + "known\\will.jpg", skip_md_init=True)
+    test_face = FaceEncoding(-1, encode_faces(known_image.filepath)[0])
+    test_person = Person(-1, "will", [test_face])
 
     will_as_unknown = ImageFile(test_data_path + "unknown\\will smile purple.jpg", skip_md_init=True)
     sam_will_trail = ImageFile(test_data_path + "unknown\\sam will trail 2.jpg", skip_md_init=True)
@@ -31,11 +31,11 @@ class TestFaceRecognizer(unittest.TestCase):
 
     # Should match when same person
     def test_one_to_one_match(self):
-        unknown_images = encode_faces(self.will_as_unknown.filepath)
-        best_matches = match_best([self.test_person], unknown_images[0].encodings_in_image)
+        self.will_as_unknown.encodings_in_image = [FaceEncoding(-1, fe) for fe in encode_faces(self.will_as_unknown.filepath)]
+        best_matches = match_best([self.test_person], self.will_as_unknown.encodings_in_image)
         self.assertEqual(len(best_matches), 1, "face didn't match itself in another picture")
 
-    @unittest.skip("Not yet fully implemented")
+    @unittest.skip("Not yet implemented")
     def test_multiple_pictures_per_known(self):
         # Requires more convoluted test setup for the known person
         known_images = [ImageFile(self.test_data_path + "known\\will\\will.jpg"),
@@ -54,20 +54,20 @@ class TestFaceRecognizer(unittest.TestCase):
 
     # Should work with multiple matches in picture
     def test_multiple_unknown_in_picture(self):
-        unknown_images = encode_faces(self.multiple_people.filepath)
-        best_matches = match_best([self.test_person], unknown_images[0].encodings_in_image)
+        unknown_faces = [FaceEncoding(-1, fe) for fe in encode_faces(self.multiple_people.filepath)]
+        best_matches = match_best([self.test_person], unknown_faces)
         self.assertEqual(1, len(best_matches), "face didn't match with itself in a picture with other people as well")
 
     # Shouldn't match on different person
     def test_no_match(self):
-        unknown_images = encode_faces(self.different_person.filepath)
-        best_matches = match_best([self.test_person], unknown_images[0].encodings_in_image)
+        unknown_faces = [FaceEncoding(-1, fe) for fe in encode_faces(self.different_person.filepath)]
+        best_matches = match_best([self.test_person], unknown_faces)
         self.assertEqual(0, len(best_matches), "face matched against a different face")
 
     # Shouldn't match on a mushroom
     def test_not_a_person(self):
-        unknown_images = encode_faces(self.mushroom.filepath)
-        faces_found = len(unknown_images[0].encodings_in_image)
+        unknown_faces = [FaceEncoding(-1, fe) for fe in encode_faces(self.mushroom.filepath)]
+        faces_found = len(unknown_faces)
         self.assertEqual(0, faces_found, "found a face match when looking at a mushroom")
 
 
@@ -112,10 +112,10 @@ class TestDatabase(unittest.TestCase):
     # Set up a basic image to test with
     test_image_path = r"test-image.jpg"
     base_test_image = ImageFile(test_image_path)  # Will be copied, since many DB calls are writing to the input image
-    encode_faces([base_test_image])
+    base_test_image.encodings_in_image = [FaceEncoding(-1, enc) for enc in  encode_faces(base_test_image.filepath)]
 
-    test_person = Person("Will")
-    encode_faces([base_test_image])  # Takes a while
+    test_person = Person(-1, "Will", base_test_image.encodings_in_image)
+
 
     base_test_image.matched_people = [test_person]
     test_person.encodings = [base_test_image.encodings_in_image[0]]
