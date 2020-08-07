@@ -8,7 +8,7 @@ I addressed the speed issue by resizing pictures to around 750px (~0.6 megapixel
 In an attempt to reduce my dependencies after getting rid of opencv, I switched to using dlib's image resizing algorithm, which brought the script's successful face match rate from around 90% to around 3%. I failed to re-profile face recognition performance after this change, and was surprised a few days later when said metric had dropped to a rather abysmal 3%. I changed over to loading and resizing images with Pillow and tested out the effect of different resize targets: 
 
 ## Accuracy
-In addition to being somewhat slow, the CNN isn't particularly accurate. The [Github repo](https://github.com/ageitgey/face_recognition) claims this:
+In addition to being somewhat slow, the CNN wasn't initially particularly accurate. The [Github repo](https://github.com/ageitgey/face_recognition) claims this:
 > Built using dlib's state-of-the-art face recognition built with deep learning. The model has an accuracy of 99.38% on the Labeled Faces in the Wild benchmark.
 
 Subjectively the accuracy felt significantly lower, so I set out to see if I could identify where I would see diminishing returns in time-spent-per-image vs accuracy. For each image, I used the calculation below to determine accuracy:
@@ -21,10 +21,10 @@ Dividing the sum of false positive/negative hits by two means the system isn't d
 The readme also indicates that dlib's face recognition is poor at recognizing children, and my own tests bore that out - basically any child under about six year old matched with the child in my "known" group, a blonde three-year-old girl.
 
 
-## Duplication of work
+## Duplication of Work
 Two days after I finished the work to get the system to correctly identify known people in unknown pictures - the bulk of the work that was done on this project - I realized that one of the libaries I was importing included a CLI interface for doing exactly that. This was pretty disheartening, but ultimately, it's limited to just that, and is missing the database integration and metadata tagging features that make this activity useful to a photographer.
 
-## File identification
+## File Identification
 In the database, each `ImageFile` is uniquely identified by an auto-incrementing integer id, but I needed some way to reliably associate any given image file with the correct row in the database, preferably in a way that would survive files being moved around. I came up with (filename + date modified + file size) together as a way of doing so, although this has the major downside that any changes to a picture's metadata - which don't affect the content of the image itself, but are stored in the file and thus affect both its date modified according to the filesystem and the total size of the file (in most cases).
 
 To get around this, I intend to replace the current approach with an algorithm that would identify images by filename and confirm them by comparing a [perceptual hash](https://pypi.org/project/ImageHash/) of *just* the image data, and accepting anything within a fairly small hashed distance. This would mean that files that are only changed slightly should still be recognized and not re-scanned. The point in using two passes (filename *and then* a hash of image data) is that hashing an image's contents is significantly more expensive than reading its filename or filesystem metadata.
@@ -134,3 +134,7 @@ I loaded more data, bringing the test data set from 78 images to 510, and re-ran
 ## Analysis and Debugging Tools
 As this application uses SQLite, I initially looked at the contents of the database using Python's built-in `sqlite3` module, but later discovered [SQLite Tools](https://www.sqlite.org/download.html), a command-line interface that is made available by the SQLite project. This was very helpful in that it enabled me to run ad-hoc queries using standard SQL syntax and see the results without writing a couple lines of code each time.
 A few days after I found SQLite Tools, I discovered [DBBrowser for SQLite](https://sqlitebrowser.org/), which has a GUI very reminiscent of SQL Server Management Studio, with which most Microsoft-stack database administrators and users will likely have decent familiarity.
+
+## Model Refactors
+I initially built my application as though it would work entirely in memory and simply write data to images. This would have worked very nicely in many ways, but unfortunately face encodings end up being too large to reliably put into any metadata tag without inventing my XMP namespace, which I'd still like to investigate at some later date.
+Instead, LITS now applies keyword tags directly to the image's metadata, but face encodings are stored in the database so they don't need to be re-generated on each run, which is unfortunately somewhat slow.
