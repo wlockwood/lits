@@ -1,7 +1,8 @@
 # Builtins
 from glob import glob
-from typing import List, Any, Dict
-from os import path, listdir
+from datetime import datetime
+from typing import List, Dict
+from os import path
 import logging
 
 # External modules
@@ -118,24 +119,33 @@ class ImageFile:
         """
         output = {"aperture": None, "shutter_speed": None, "iso": None}
 
+        # This code is repetitive, but each needs to be handled slightly different.
+
         try:
             aperture = self.exif.get("Exif.Photo.FNumber")
             output["aperture"] = round(self.frac_string_to_number(aperture), 1) if aperture else None
         except:
-            logging.warning(f"Failed to parse EXIF aperture field for '{self.filepath}'. Expected a fraction, got '{aperture}'")
+            logging.warning(f"Failed to parse EXIF 'FNumber' field for '{self.filepath}'. Expected a fraction, got '{aperture}'")
 
         try:
             ss = self.exif.get("Exif.Photo.ExposureTime")
             output["shutter_speed"] = self.frac_string_to_number(ss) if ss else None
         except:
-            logging.warning(f"Failed to parse EXIF shutter_speed field for '{self.filepath}'. Expected an fraction, got '{ss}'")
+            logging.warning(f"Failed to parse EXIF 'ExposureTime' field for '{self.filepath}'. Expected an fraction, got '{ss}'")
 
         try:
             iso = self.exif.get("Exif.Photo.ISOSpeedRatings")
             iso = iso.split()[0]
             output["iso"] = int(iso) if iso else None
         except:
-            logging.warning(f"Failed to parse EXIF ISO field for '{self.filepath}'. Expected an int, got '{iso}'")
+            logging.warning(f"Failed to parse EXIF 'ISOSpeedRatings' field for '{self.filepath}'. Expected an int, got '{iso}'")
+
+        try:
+            date_taken = self.exif.get("Exif.Photo.DateTimeOriginal")
+            date_taken = datetime.strptime(date_taken, "%Y:%m:%d %H:%M:%S")
+            output["date_taken"] = date_taken if date_taken else None
+        except:
+            logging.warning(f"Failed to parse EXIF 'DateTimeOriginal' field for '{self.filepath}'. Expected an datetime, got '{date_taken}'")
 
         return output
 

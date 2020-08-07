@@ -1,5 +1,4 @@
 import sqlite3
-import time
 from datetime import datetime
 from typing import List, Optional
 import logging
@@ -24,6 +23,8 @@ class Database:
     datetime_format_string = "%Y%m%d-%H%M"  # Should result in 20200804-0934, etc.
     logger = logging.getLogger(__name__)
 
+    # TODO: Refactor to put metadata fields (exposure, etc.) on their own table
+
     def __init__(self, db_file_path: str):
         self.db_file_path = db_file_path
         self.connection = sqlite3.connect(db_file_path, detect_types=sqlite3.PARSE_COLNAMES, isolation_level=None)
@@ -47,6 +48,7 @@ class Database:
 
     def create_schema(self):
         # TODO: Benchmark each index
+
         """
         Initializes an empty database.
         :return:
@@ -58,7 +60,7 @@ class Database:
             path TEXT NOT NULL, 
             date_modified DATETIME NOT NULL, 
             size_bytes INT NOT NULL,
-            aperture REAL, shutter_speed REAL, iso INT,
+            aperture REAL, shutter_speed REAL, iso INT, date_taken TEXT,
             UNIQUE(filename, date_modified, size_bytes)
             );
 
@@ -113,11 +115,13 @@ class Database:
 
         # Insert images
         insert_image = """
-        INSERT INTO Image (filename, date_modified, size_bytes, aperture, shutter_speed, iso, path) values (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO Image 
+        (filename, date_modified, size_bytes, aperture, shutter_speed, iso, date_taken, path) 
+        values (?, ?, ?, ?, ?, ?, ?, ?)
+        --      0  1  2  3  4  5  6  7  
         """
         dbresponse = self.connection.execute(insert_image, self.adapt_ImageFile(image))
         image.dbid = dbresponse.lastrowid
-        # print(f"Inserted {image} as row {dbresponse.lastrowid}")
 
         # Insert associated encodings
         for enc in encodings:
@@ -135,11 +139,12 @@ class Database:
                 size_bytes = ?,
                 aperture = ?,
                 shutter_speed = ?,
-                iso = ?
+                iso = ?,
+                date_taken = ?
             WHERE
                 id = ?
         """
-        params = self.adapt_ImageFile(image)[1:6] + [image.dbid]
+        params = self.adapt_ImageFile(image)[1:7] + [image.dbid]
         dbresponse = self.connection.execute(sql, params)
         result = dbresponse.fetchall()
         if dbresponse.rowcount != 1:
@@ -148,7 +153,6 @@ class Database:
     def add_person(self, name) -> int:
         """
         Adds a person to the database.
-        :param person: A person object.
         :return: The new person's id
         """
 
@@ -210,7 +214,7 @@ class Database:
         dbid = dbresponse.lastrowid
         return dbid
 
-    def get_image_id_by_attributes(self, image: ImageFile) -> int:
+    def get_image_id_by_attributes(self, image: ImageFile) -> Optional[int]:
         """
         Searches the database for an image with a given filename/date-modified/filesize combination.
         :param image: The image to check the database for
@@ -231,14 +235,6 @@ class Database:
         dbid = image_row["id"]
 
         return dbid
-
-    def get_image_data_by_id(self, image_id: int) -> (List[ndarray], List[Person]):
-        # Don't actually fill input image's data until everything is successfully retrieved
-
-        encodings = self.get_encodings_by_image_id(image_id)
-        people = self.get_people_by_image_id(image_id)
-
-        return encodings, people
 
     def get_encodings_by_image_id(self, image_id: int) -> List[FaceEncoding]:
         sql = """
@@ -318,17 +314,22 @@ class Database:
     def adapt_ImageFile(cls, image: ImageFile, include_path: bool = True):
         # Date and time stamp of the last time the file was modified
         mtime = cls.get_formatted_date_modified(image.filepath)
+
         exposure_data = image.get_exposure_data()
+        date_taken = exposure_data.get("date_taken")
+        date_taken = date_taken and date_taken.strftime(cls.datetime_format_string)  # Null conditional
+
         # Relative path is last because we won't always use it
         output = [os.path.basename(image.filepath),    # 0
                   mtime,                               # 1
                   os.path.getsize(image.filepath),     # 2
                   exposure_data.get("aperture"),       # 3
                   exposure_data.get("shutter_speed"),  # 4
-                  exposure_data.get("iso")             # 5
+                  exposure_data.get("iso"),            # 5
+                  date_taken                           # 6
                   ]
         if include_path:
-            output.append(image.filepath)
+            output.append(image.filepath)              # 7
 
         return output
 
