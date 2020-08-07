@@ -4,9 +4,10 @@ import unittest
 import uuid
 from copy import deepcopy
 from os import path
-
-# Custom modules
 import numpy
+from datetime import datetime
+# Custom modules
+
 
 from Controllers.Database import Database
 from Controllers.FaceRecognizer import encode_faces, match_best
@@ -104,6 +105,14 @@ class TestImage(unittest.TestCase):
         readout = self.test_image.get_keywords()
         self.assertEqual(1, len(readout), "Adding the same keyword multiple times wasn't de-duplicated.")
 
+    def test_exif_extract(self):
+        exif_data = self.test_image.get_salient_exif_data()
+        self.assertEqual(1.8, exif_data["aperture"])
+        self.assertEqual(1/200, exif_data["shutter_speed"])
+        self.assertEqual(100, exif_data["iso"])
+        self.assertEqual(datetime.strptime("2020:07:23 07:47:08", ImageFile.exif_timestamp_format), exif_data["date_taken"])
+
+
 
 class TestDatabase(unittest.TestCase):
     # DB Info
@@ -115,7 +124,6 @@ class TestDatabase(unittest.TestCase):
     base_test_image.encodings_in_image = [FaceEncoding(-1, enc) for enc in  encode_faces(base_test_image.filepath)]
 
     test_person = Person(-1, "Will", base_test_image.encodings_in_image)
-
 
     base_test_image.matched_people = [test_person]
     test_person.encodings = [base_test_image.encodings_in_image[0]]
@@ -135,17 +143,15 @@ class TestDatabase(unittest.TestCase):
 
     def test_add_image(self):
         # This will fail if anything else does, which isn't ideal, but I want to make sure it's thorough
-        new_image_id = self.test_db.add_image(self.this_test_image)
+        new_image_id = self.test_db.add_image(self.this_test_image, [])
         dbresponse = self.test_db.connection.execute("SELECT * FROM Image")
         result = dbresponse.fetchall()
         test_row = result[0]
 
         self.assertEqual(1, len(result), "Wrong number of images inserted when trying to add one")
-        second_image_id = self.test_db.add_image(self.this_test_image)
+        second_image_id = self.test_db.add_image(self.this_test_image, [])
         self.assertEqual(new_image_id, second_image_id, "Inserted same file twice, got different Ids")
         self.assertEqual(os.path.getsize(self.this_test_image.filepath), test_row["size_bytes"])
-        # TODO: Investigate mdate keeps changing in my test data
-        self.assertEqual("20200804-1517", test_row["date_modified"])
 
     def test_encoding_ops(self):
         self.test_db.connection.executescript("DELETE FROM Encoding")
@@ -155,9 +161,9 @@ class TestDatabase(unittest.TestCase):
                           msg="Expected a failure while trying to add an unassociated encoding, but succeeded.")
 
         # Strip and store an encoding
-        test_encoding = self.this_test_image.encodings_in_image[0]
+        test_encoding = self.this_test_image.encodings_in_image[0].encoding
         self.this_test_image.encodings_in_image = []
-        id_of_partial_image = self.test_db.add_image(self.this_test_image)
+        id_of_partial_image = self.test_db.add_image(self.this_test_image, [test_encoding])
         self.test_db.connection.commit()
         new_enc = self.test_db.add_encoding(test_encoding,
                                             associate_id=id_of_partial_image,
