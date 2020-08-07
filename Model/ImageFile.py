@@ -11,6 +11,9 @@ import pyexiv2 as pe2
 
 
 class ImageFile:
+    """
+    Represents an image file of some kind and some of its metadata. May or may not be in the database.
+    """
     encoding_store_field_name = "Xmp.dc.Description"  # TODO: Extend pyexiv2 to support custom namespaces
     keyword_field_name = "Iptc.Application2.Keywords"
     normal_encoding = "ISO-8859-1"  # Single-byte unicode approximation
