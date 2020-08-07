@@ -15,7 +15,6 @@ from Controllers.Database import Database
 
 
 def show_dashboard(db: Database):
-    style.use('fast')
     fig, axes = plt.subplots(2, 3)
     fig.set_size_inches(15, 10)
     fig.set_dpi(100)
@@ -38,6 +37,7 @@ def show_dashboard(db: Database):
     # ISO is logarithmic, bottom weighted, and has accepted values
     isoplot = axes[1][2]
     graph2d_from_query(db, isoplot, "ISO Frequency", "ISO (\"Gain\")", "Number of Pictures")
+
     isoplot.set_xscale("log", base=2)
     iso_steps = [50 * 2 ** twopow for twopow in range(0, 14)]  # 50, 100, 200, 400, 800...
     biggest_iso = max(isoplot.get_children()[0].get_xdata())
