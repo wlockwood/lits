@@ -152,7 +152,7 @@ def main():
                 db.get_or_associate_encoding(enc.dbid, associate_id=person.dbid, person=True)
 
         # Update image attributes, just in case we tweaked them.
-        if True:
+        if attribs_dirty:
             db.update_image_attributes(image)
 
         # Stats and UI updates
