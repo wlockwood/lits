@@ -3,9 +3,8 @@ env/
 .idea/
 __pycache__/
 face_recognition_repo
-*.jpg
-*.png
+!unittest-images/
+test-data/
 *.db
 *.exe
 *.log
-!test-image.jpg
