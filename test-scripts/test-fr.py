@@ -46,6 +46,7 @@ encoding_generation_times = []
 face_compare_times = []
 expected_counts = []
 found_counts = []
+true_positive_counts = []
 false_positive_counts = []
 false_negative_counts = []
 
@@ -89,15 +90,15 @@ for file in files:
 
         # Remove faces that too unlike the face we're checking.
         possible_matches: List[ComparedFace] = [x for x in possible_matches if x.Distance < TOLERANCE]
-        print(f"\tBy tolerance, {len(possible_matches)} likely matches: ", ', '.join([str(x) for x in possible_matches]))
+        #print(f"\tBy tolerance, {len(possible_matches)} likely matches: ", ', '.join([str(x) for x in possible_matches]))
 
         # Removing already-found people
         possible_matches  = [x for x in possible_matches if x.Person not in found_people]
-        print(f"\tBy newness, {len(possible_matches)} likely matches: ", ', '.join([str(x) for x in possible_matches]))
+        #print(f"\tBy newness, {len(possible_matches)} likely matches: ", ', '.join([str(x) for x in possible_matches]))
 
         # Sort by chance of facial distance ascending
         possible_matches = sorted(possible_matches, key=lambda x: x.Distance)
-        print(f"\tAfter sorting, {len(possible_matches)} likely matches: ", ', '.join([str(x) for x in possible_matches]))
+        #print(f"\tAfter sorting, {len(possible_matches)} likely matches: ", ', '.join([str(x) for x in possible_matches]))
 
         if len(possible_matches) > 0:
             best_match = possible_matches[0].Person
@@ -107,6 +108,8 @@ for file in files:
 
 
     # Compare actual and expected results
+    true_positives = [x for x in found_people if x in expected_people]
+    true_positive_counts.append(len(true_positives))
     false_positives = [x for x in found_people if x not in expected_people]
     false_positive_counts.append(len(false_positives))
     false_negatives = [x for x in expected_people if x not in found_people]
@@ -115,23 +118,37 @@ for file in files:
     expected_counts.append(len(expected_people))
 
 
-    if len(found_people) > 0 or len(expected_people) > 0:
+    if len(false_negatives) + len(false_negatives) > 0:
         print(f"\t   Found {', '.join([x.Name for x in found_people])}")
         print(f"\tExpected {', '.join([x.Name for x in expected_people])}")
         print(f"\tF+: {len(false_positives):2} F-: {len(false_negatives)}")
-    else:
-        print("No people found or expected.")
+
+
+def list_to_stats(inlist: List, to_ms=False, to_percent=False):
+    if len(inlist) > 0:
+        if to_percent:
+            return f"avg{sum(inlist) * 100.0 / len(inlist):.2f}%, max {max(inlist) * 100:.2f}"
+        elif to_ms:
+            return f"{sum(inlist)*1000:,.1f}ms, avg {sum(inlist) * 1000.0 / len(inlist):.2f}ms, max {max(inlist)*1000:.2f}"
+        else:
+            return f"{sum(inlist):,.1f}s, avg {sum(inlist) * 1.0 / len(inlist):.2f}s, max {max(inlist):.2f}"
+    return "[no data]"
+
 print()
 print(" ==== Face recognition complete! ====")
 print(f" - Settings: Tolerance = {TOLERANCE}   resize_to = {goal_size}")
 print(" - Statistics - ")
-print(f"Encoding generation: {sum(encoding_generation_times):,.1f}s, avg {sum(encoding_generation_times) / len(encoding_generation_times):.2}s, max {max(encoding_generation_times):.2}")
-print(f"       Face compare: {sum(face_compare_times)*1000:.3f}ms, avg {sum(face_compare_times) / len(face_compare_times) * 1000:.3f}ms, max {max(face_compare_times) * 1000:.3f}ms")
-print(f"     Expected faces: {sum(expected_counts)}, avg {sum(expected_counts) / max(len(expected_counts), 1):.2}, max {max(expected_counts)}")
-print(f"        Found faces: {sum(found_counts)}, avg {sum(found_counts) / max(len(found_counts), 1):.2}, max {max(found_counts)}")
 
-success_percents = [(100 if expected_counts[i] == 0 and found_counts[i] == 0 else
-                     ((found_counts[i]-(false_negative_counts[i]-false_positive_counts[i])/2) * 100.0 / expected_counts[i]))
+
+print("Encoding generation: ", list_to_stats(encoding_generation_times))
+print("       Face compare: ", list_to_stats(face_compare_times, to_ms=True))
+print("     Expected faces: ", list_to_stats(expected_counts))
+print("        Found faces: ", list_to_stats(expected_counts))
+print("     True positives: ", list_to_stats(true_positive_counts))
+print("       TP Success %: ", list_to_stats([true_positive_counts[i] * 1.0 / expected_counts[i] for i in range(len(true_positive_counts)) if expected_counts[i] > 0], to_percent= True))
+
+
+success_percents = [((found_counts[i]-(false_negative_counts[i]+false_positive_counts[i])/2) * 100.0 / expected_counts[i])
                     for i in range(len(files)) if expected_counts[i] > 0]
 print(f"          Success %: avg {sum(success_percents) / len(success_percents):.1f}%")
 if len(false_positive_counts) > 0:
