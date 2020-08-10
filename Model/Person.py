@@ -1,6 +1,4 @@
 from typing import List, Any
-
-from numpy.core.multiarray import ndarray
 from Model.FaceEncoding import FaceEncoding
 
 class Person:

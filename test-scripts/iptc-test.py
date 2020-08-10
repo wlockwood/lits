@@ -12,6 +12,8 @@ images_to_scan = [ImageFile(path.join(scan_path, f)) for f in listdir(scan_path)
 image = ImageFile(r"..\test-data\unknown\sam tongue out.jpg")
 
 for image in images_to_scan:
+    image.clear_keywords()
+
     print("Reading file ", image.filepath)
     with open(image.filepath, 'rb+') as file:
         with pe2.ImageData(file.read()) as imdat:
