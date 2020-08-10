@@ -27,8 +27,11 @@ class Database:
     # TODO: Use exif.date_taken instead of date_modified to identify files. Needs to be hhmmss instead of hhmm though.
 
     def __init__(self, db_file_path: str):
+        # Parameters
         self.db_file_path = db_file_path
-        self.connection = sqlite3.connect(db_file_path, detect_types=sqlite3.PARSE_COLNAMES, isolation_level=None)
+
+        # Setup - cache entire DB to memory
+        self.connection = self.load_from_disk()
         self.open_connections.append(self)
 
         # Create tables if they don't already exist: Image, Person, PersonInImage
@@ -38,9 +41,21 @@ class Database:
         self.connection.row_factory = sqlite3.Row
 
     def close(self):
+        self.save_to_disk()
         self.connection.close()
         self.open_connections.remove(self)
         print(f"Successfully closed database at {self.db_file_path}")
+
+    def load_from_disk(self):
+        on_disk = sqlite3.connect(self.db_file_path, detect_types=sqlite3.PARSE_COLNAMES, isolation_level=None)
+        connection = sqlite3.connect(":memory:", detect_types=sqlite3.PARSE_COLNAMES, isolation_level=None)
+        on_disk.backup(self.connection)
+        return connection
+
+    def save_to_disk(self):
+        on_disk = sqlite3.connect(self.db_file_path, detect_types=sqlite3.PARSE_COLNAMES, isolation_level=None)
+        self.connection.backup(on_disk)  # Save memory DB to file
+        on_disk.close()
 
     @classmethod
     def close_all(cls):
@@ -128,7 +143,6 @@ class Database:
         for enc in encodings:
             self.add_encoding(enc, image.dbid, image=True)
 
-        self.connection.commit()
         image.in_database = True
         return image.dbid
 

@@ -161,6 +161,9 @@ def main():
         time_taken = pc() - image_start_time
         timers.append(time_taken)
 
+        # Checkpoint database
+        if scan_count % 250:
+            db.save_to_disk()
 
     print(f"Image times: {sum(timers):,.1f}s, avg {sum(timers) / len(timers):.2}s, max {max(timers):.2}")
     print(f"Done encoding {total:,} images. ({pc() - start_time:.1f}s total)")
