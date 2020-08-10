@@ -53,10 +53,47 @@ This defaults to 0.6, and lower inputs (ex: 0.2) force stricter matches at the c
 Development environment is Windows, so installation assumes that. Installing in other environments should be doable with slight modifications that are left as an exercise to the Linux-using reader.
 
 ## Windows Install
+
 1. If you don't already have it, install Python3 from https://www.python.org/downloads/.
    - This should already come with pip and virtualenv.
+1. Clone LITS: `git clone https://github.com/wlockwood/lits.git`
+1. Navigate into LITS' folder that Git created: `cd lits`
 1. Create a virtual environment for your LITS install: `py -m venv env`
-1. Install face_recognition: `pip install face_recognition`.
-1. Install pyexiv2: `pip install pyexiv2`
-1. Install matplotlib: `pip install matplotlib`
+1. Install dependencies: `pip install -r requirements`, or if you prefer:
+   1. Install face_recognition: `pip install face_recognition`.
+   1. Install pyexiv2: `pip install pyexiv2`
+   1. Install matplotlib: `pip install matplotlib`
 1. _[Optional]_ Download [SQLite Tools](https://www.sqlite.org/download.html) or [DBBrowser for SQLite](https://sqlitebrowser.org/) if you want to run queries against the database that is built. This may be integrated in future versions. SQLite Tools has a CLI, and DBBrowser has a quite nice GUI.
+
+# Example file structure
+```
+Root of installation
+|   lits.py
+|   dashboard.py
+|   tests.py
+|   lits.db
++---Model
+|   |   FaceEncoding.py
+|   |   ImageFile.py
+|   |   Person.py
+|
++---Controllers
+|   |   Database.py
+|   |   FaceRecognizer.py
+|
++---unittest-data
+|   +---known
+|   |       alyssa.jpg
+|   |       bruce.jpg
+|   |       will.jpg
+|   |       
+|   \---unknown
+|       |   alyssa dean heidi.jpg
+|       |   mecha art.jpg
+|       |   mushroom.jpg
+|       |   PANO_20151029_143515.jpg
+|       |   work group will.jpg
+|       |   
+|       +---Test subfolder
+|       |   |   catbus.jpg
+```
