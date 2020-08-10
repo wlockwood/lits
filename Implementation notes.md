@@ -1,6 +1,8 @@
 # Implementation notes
+I'm including these implementation notes. They're a collection of problems I encountered or specific efforts and their results, more or less in chronological order of their occurrence. I hope that they will serve to save time for whoever next works with this code or who is solving similar problems.
+
 ## OpenCV Face Detection
-face_recognition uses dlib, which uses a CNN to recognize faces. This turns out to be fairly slow, so I attempted to improve speed by using OpenCV (which detects but does not recognize faces in real time) to identify face locations before passing to face_recognition to recognize faces, but this resulted in faces never being recognized, possibly because the bounding boxes were too small (which could be solved with padding), but after adding a visualization to the face detection step, I realized OpenCV had high rates for both false positives (detecting a face where there was none) and false negatives (failing to detect faces in a picture). 
+face_recognition uses dlib, which uses a CNN to recognize faces. This turns out to be fairly slow, so I attempted to improve speed by using OpenCV (which detects but does not recognize faces in real time) to identify face locations before passing to face_recognition to recognize faces, but this resulted in faces never being recognized, possibly because the bounding boxes were too small (which could be solved with padding), but after adding a visualization to the face detection step, I realized OpenCV had high rates for both false positives (detecting a face where there was none) and false negatives (failing to detect faces in a picture).
 
 I addressed the speed issue by resizing pictures to around 750px (~0.6 megapixels) while maintaining their aspect ratios as many of the pictures in my dataset were at or 4000x2669 (10 megapixels) or larger. There was a more-or-less linear correlation between image resolution and time taken to encode the faces in that image.
 
@@ -14,9 +16,11 @@ In addition to being somewhat slow, the CNN wasn't initially particularly accura
 Subjectively the accuracy felt significantly lower, so I set out to see if I could identify where I would see diminishing returns in time-spent-per-image vs accuracy. For each image, I used the calculation below to determine accuracy:
 
 ```
-[success percent] = [faces found] - ([false positive] + [false negatives])/2 / [expected face count] if [expected face count] > 0]
+[success percent] = [faces found] - ([false positives] + [false negatives])/2 / [expected face count] if [expected face count] > 0]
 ```
 Dividing the sum of false positive/negative hits by two means the system isn't doubly penalized for mistaking a face. Images with no faces in them were included in the test set and were assigned a score of 100% if no faces were found.
+
+It's not a perfect metric, but it has generally matched with a subjective evaluation of a run's accuracy.
 
 The readme also indicates that dlib's face recognition is poor at recognizing children, and my own tests bore that out - basically any child under about six year old matched with the child in my "known" group, a blonde three-year-old girl.
 
@@ -99,7 +103,7 @@ For comparison, below is the same tree on a run where every image is new and thu
 ```
 I loaded more data, bringing the test data set from 78 images to 510, and re-ran LITS. The profiler output for that run is below, but take note of the 352 seconds of "show dashboard" that are caused by it waiting on the user once everything else is complete. Removing that, we can see that the 432 additional pictures were encoded and added to the database in 445 seconds, a rate of ~1.0 images per second. Also note that the resize operation took 25% of that 452 seconds. This is explained partially by the bulk load of extra data being images straight from a Nikon D7100 and being 3-9MB in size.
 ```py
-917.595 <module>  lits.py:16
+565.595 <module>  lits.py:16
 └─ 915.088 main  lits.py:42
    ├─ 445.905 ensure_image_in_database  lits.py:181
    │  ├─ 343.901 encode_faces  Controllers\FaceRecognizer.py:19
